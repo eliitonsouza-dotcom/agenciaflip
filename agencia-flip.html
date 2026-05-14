@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agência FLIP 1.0 Beta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root {
+      --bg: #0D0D0D; --bg2: #1A1A1A; --bg3: #242424;
+      --border: #2A2A2A; --border2: #383838;
+      --orange: #FF6600; --orange-dim: #cc5200; --orange-glow: rgba(255,102,0,0.15);
+      --text: #FFFFFF; --text2: #AAAAAA; --text3: #666666;
+      --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+      --font: 'Space Grotesk', sans-serif; --mono: 'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    .sidebar { width: 220px; background: #111; border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo .name { font-size: 15px; font-weight: 800; letter-spacing: 1px; color: var(--orange); text-transform: uppercase; }
+    .sidebar-logo .ver { font-size: 10px; font-weight: 700; background: var(--orange); color: #fff; padding: 1px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+    .sidebar nav { flex: 1; padding: 12px 0; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; font-weight: 500; color: #888; border-left: 2px solid transparent; cursor: pointer; transition: all 0.15s; user-select: none; }
+    .nav-item:hover { color: #ccc; background: rgba(255,255,255,0.03); }
+    .nav-item.active { color: var(--orange); background: rgba(255,102,0,0.08); border-left-color: var(--orange); }
+    .nav-item i { width: 16px; text-align: center; }
+    .nav-item span { flex: 1; }
+    .nav-badge { background: var(--orange); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 11px; color: #444; }
+
+    .main { flex: 1; overflow: auto; padding: 32px 36px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .page-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
+
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; font-family: var(--font); transition: all 0.15s; cursor: pointer; border: none; }
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-primary:hover { background: var(--orange-dim); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+
+    .form-group { margin-bottom: 18px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 6px; }
+    input, textarea, select { font-family: var(--font); background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 12px; font-size: 14px; width: 100%; transition: border-color 0.2s; outline: none; }
+    input:focus, textarea:focus, select:focus { border-color: var(--orange); }
+    select option { background: var(--bg2); }
+
+    .status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .status-orange { background: rgba(255,102,0,0.15); color: var(--orange); border: 1px solid rgba(255,102,0,0.3); }
+    .status-green  { background: rgba(34,197,94,0.12);  color: var(--green);  border: 1px solid rgba(34,197,94,0.3); }
+    .status-yellow { background: rgba(234,179,8,0.12);  color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+    .status-red    { background: rgba(239,68,68,0.12);  color: var(--red);    border: 1px solid rgba(239,68,68,0.3); }
+    .status-gray   { background: rgba(255,255,255,0.06); color: var(--text2); border: 1px solid var(--border); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .stat-icon { font-size: 20px; color: var(--orange); margin-bottom: 12px; }
+    .stat-label { font-size: 12px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .stat-value { font-size: 32px; font-weight: 800; font-family: var(--mono); }
+    .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 0 0 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    td { padding: 12px 0; font-size: 13px; color: var(--text2); }
+    td:first-child { color: var(--text); font-weight: 600; }
+
+    .demand-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+    .demand-item:last-child { border-bottom: none; }
+    .demand-item:hover { background: rgba(255,255,255,0.02); margin: 0 -20px; padding: 14px 20px; border-radius: 8px; }
+    .demand-icon { width: 38px; height: 38px; border-radius: 8px; background: var(--orange-glow); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .demand-icon i { color: var(--orange); font-size: 14px; }
+    .demand-info { flex: 1; min-width: 0; }
+    .demand-client { font-size: 13px; font-weight: 600; color: var(--text); }
+    .demand-desc { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+    .cal-header { font-size: 11px; color: var(--text3); text-align: center; padding: 8px 0; font-weight: 700; }
+    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.15s; position: relative; }
+    .cal-day:hover { background: var(--bg3); }
+    .cal-day.today { background: var(--orange-glow); color: var(--orange); font-weight: 700; }
+    .cal-day.has-event::after { content:''; width:4px; height:4px; background:var(--orange); border-radius:50%; position:absolute; bottom:4px; }
+    .cal-day.other-month { color: var(--text3); }
+
+    .launch-banner { background: linear-gradient(135deg,rgba(255,102,0,0.12),rgba(255,102,0,0.04)); border: 1px solid rgba(255,102,0,0.25); border-radius: 12px; padding: 24px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .launch-info h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .launch-info p { font-size: 13px; color: var(--text2); }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; display: inline-block; }
+    @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)} 50%{opacity:.8;box-shadow:0 0 0 6px rgba(34,197,94,0)} }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); transform: translateY(80px); opacity: 0; transition: all 0.3s ease; z-index: 1000; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    .cfg-key-status { font-size: 11px; color: var(--green); margin-top: 3px; display: none; }
+    .cfg-key-status.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="name">Agência FLIP</div>
+      <span class="ver">1.0 BETA</span>
+    </div>
+    <nav>
+      <div class="nav-item active" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
+      <div class="nav-item" data-page="clientes"><i class="fa-solid fa-users"></i><span>Clientes</span></div>
+      <div class="nav-item" data-page="nova-demanda"><i class="fa-solid fa-plus-circle"></i><span>Nova demanda</span></div>
+      <div class="nav-item" data-page="aprovacao"><i class="fa-solid fa-check-double"></i><span>Aprovação</span><span class="nav-badge" id="badge-pending" style="display:none"></span></div>
+      <div class="nav-item" data-page="planner"><i class="fa-solid fa-calendar-days"></i><span>Planner</span></div>
+      <div class="nav-item" data-page="trafego"><i class="fa-solid fa-chart-line"></i><span>Tráfego</span></div>
+      <div class="nav-item" data-page="configuracoes"><i class="fa-solid fa-gear"></i><span>Configurações</span></div>
+    </nav>
+    <div class="sidebar-footer">Tom & Jéssica · FLIP</div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Visão geral da agência</div></div>
+        <a href="http://localhost:3000" target="_blank" class="btn btn-primary"><i class="fa-solid fa-rocket"></i> Abrir sistema completo</a>
+      </div>
+
+      <div class="launch-banner">
+        <div class="launch-info">
+          <h2><i class="fa-solid fa-server" style="color:var(--orange);margin-right:8px"></i> Sistema rodando localmente</h2>
+          <p>Banco de dados SQLite salvo em <code style="color:var(--orange);font-family:var(--mono);font-size:12px">agencia-flip/flip.db</code> · Uploads em <code style="color:var(--orange);font-family:var(--mono);font-size:12px">agencia-flip/uploads/</code></p>
+        </div>
+        <div style="text-align:right">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:8px;justify-content:flex-end">
+            <span class="pulse"></span><span style="color:var(--green)" id="server-status">Verificando...</span>
+          </div>
+          <a href="http://localhost:3000" target="_blank" class="btn btn-ghost" style="font-size:12px"><i class="fa-solid fa-arrow-up-right-from-square"></i> localhost:3000</a>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-users"></i></div><div class="stat-label">Clientes ativos</div><div class="stat-value" id="s-clients">—</div><div class="stat-sub">cadastrados</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div><div class="stat-label">Demandas</div><div class="stat-value" id="s-demands">—</div><div class="stat-sub">no total</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-hourglass-half"></i></div><div class="stat-label">Aguard. aprovação</div><div class="stat-value" id="s-pending">—</div><div class="stat-sub">precisam de ação</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div><div class="stat-label">Agendados</div><div class="stat-value" id="s-scheduled">—</div><div class="stat-sub">prontos para publicar</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:16px;font-size:14px"><i class="fa-solid fa-bolt" style="color:var(--orange);margin-right:6px"></i> Ações rápidas</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="http://localhost:3000/nova-demanda" target="_blank" class="btn btn-primary" style="justify-content:center"><i class="fa-solid fa-wand-magic-sparkles"></i> Criar demanda com IA</a>
+            <a href="http://localhost:3000/clientes/novo" target="_blank" class="btn btn-ghost" style="justify-content:center"><i class="fa-solid fa-user-plus"></i> Cadastrar cliente</a>
+            <a href="http://localhost:3000/aprovacao" target="_blank" class="btn btn-ghost" style="justify-content:center"><i class="fa-solid fa-check-double"></i> Ver fila de aprovação</a>
+            <a href="http://localhost:3000/planner" target="_blank" class="btn btn-ghost" style="justify-content:center"><i class="fa-solid fa-calendar-days"></i> Abrir planner</a>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:16px;font-size:14px"><i class="fa-solid fa-clock-rotate-left" style="color:var(--orange);margin-right:6px"></i> Últimas demandas</div>
+          <div id="recent-demands"><div style="text-align:center;padding:32px;color:var(--text3)"><i class="fa-solid fa-spinner fa-spin" style="font-size:20px;margin-bottom:8px;display:block"></i>Carregando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="page-clientes" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Clientes</div><div class="page-sub">Carteira de clientes cadastrados</div></div>
+        <a href="http://localhost:3000/clientes/novo" target="_blank" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Novo cliente</a>
+      </div>
+      <div class="card">
+        <div id="clients-table"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- NOVA DEMANDA -->
+    <div id="page-nova-demanda" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Nova demanda</div><div class="page-sub">Criação via sistema React com IA</div></div>
+      </div>
+      <div class="launch-banner">
+        <div class="launch-info">
+          <h2><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--orange);margin-right:8px"></i> Geração com IA</h2>
+          <p>A criação de demandas usa Claude AI e requer o sistema React completo</p>
+        </div>
+        <a href="http://localhost:3000/nova-demanda" target="_blank" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir no sistema</a>
+      </div>
+      <div class="grid-3">
+        <div class="card" style="text-align:center;padding:28px"><i class="fa-solid fa-robot" style="font-size:32px;color:var(--orange);margin-bottom:12px;display:block"></i><div style="font-weight:700;margin-bottom:6px">Claude AI</div><div style="font-size:12px;color:var(--text3)">Gera legenda, CTA e hashtags com base no briefing do cliente</div></div>
+        <div class="card" style="text-align:center;padding:28px"><i class="fa-solid fa-image" style="font-size:32px;color:var(--orange);margin-bottom:12px;display:block"></i><div style="font-weight:700;margin-bottom:6px">DALL-E Imagens</div><div style="font-size:12px;color:var(--text3)">Geração automática de imagens para posts e stories</div></div>
+        <div class="card" style="text-align:center;padding:28px"><i class="fa-brands fa-meta" style="font-size:32px;color:var(--orange);margin-bottom:12px;display:block"></i><div style="font-weight:700;margin-bottom:6px">Meta Publish</div><div style="font-size:12px;color:var(--text3)">Publicação direta no Instagram e Facebook</div></div>
+      </div>
+    </div>
+
+    <!-- APROVAÇÃO -->
+    <div id="page-aprovacao" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Fila de aprovação</div><div class="page-sub">Demandas aguardando revisão</div></div>
+        <a href="http://localhost:3000/aprovacao" target="_blank" class="btn btn-ghost"><i class="fa-solid fa-arrow-up-right-from-square"></i> Aprovar no sistema</a>
+      </div>
+      <div class="card">
+        <div id="approval-list"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:12px;display:block"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- PLANNER -->
+    <div id="page-planner" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Planner</div><div class="page-sub" id="cal-label"></div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <button class="btn btn-ghost" onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+          <a href="http://localhost:3000/planner" target="_blank" class="btn btn-ghost"><i class="fa-solid fa-arrow-up-right-from-square"></i> Sistema completo</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cal-grid" id="cal-headers"></div>
+        <div class="cal-grid" id="cal-days" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- TRÁFEGO -->
+    <div id="page-trafego" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Tráfego</div><div class="page-sub">Campanhas e métricas Meta Ads</div></div>
+        <a href="http://localhost:3000/trafego" target="_blank" class="btn btn-ghost"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver no sistema</a>
+      </div>
+      <div class="launch-banner">
+        <div class="launch-info">
+          <h2><i class="fa-brands fa-meta" style="color:var(--orange);margin-right:8px"></i> Meta Ads integrado</h2>
+          <p>Configure o META_ACCESS_TOKEN nas configurações para ver as métricas</p>
+        </div>
+        <a href="http://localhost:3000/trafego" target="_blank" class="btn btn-primary"><i class="fa-solid fa-chart-line"></i> Ver métricas</a>
+      </div>
+      <div class="grid-3">
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-eye"></i></div><div class="stat-label">Impressões</div><div class="stat-value" id="t-impressions">—</div><div class="stat-sub">último mês</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-users"></i></div><div class="stat-label">Alcance</div><div class="stat-value" id="t-reach">—</div><div class="stat-sub">pessoas únicas</div></div>
+        <div class="stat-card"><div class="stat-icon"><i class="fa-solid fa-hand-pointer"></i></div><div class="stat-label">Engajamento</div><div class="stat-value" id="t-engagement">—</div><div class="stat-sub">interações</div></div>
+      </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES -->
+    <div id="page-configuracoes" class="page">
+      <div class="page-header">
+        <div><div class="page-title">Configurações</div><div class="page-sub">Chaves de API e dados da agência — salvos localmente no banco de dados</div></div>
+      </div>
+
+      <div class="card" style="max-width:680px;margin-bottom:20px">
+        <div style="font-weight:700;margin-bottom:16px;font-size:15px"><i class="fa-solid fa-building" style="margin-right:8px;color:var(--orange)"></i> Agência</div>
+        <div class="form-row">
+          <div class="form-group"><label>Proprietário 1</label><input id="cfg-owner1" placeholder="Tom" /></div>
+          <div class="form-group"><label>Proprietária 2</label><input id="cfg-owner2" placeholder="Jéssica" /></div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:680px;margin-bottom:20px">
+        <div style="font-weight:700;margin-bottom:4px;font-size:15px"><i class="fa-solid fa-key" style="margin-right:8px;color:var(--orange)"></i> Chaves de API</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:20px;padding:10px 12px;background:rgba(255,102,0,0.06);border-radius:6px;border-left:3px solid var(--orange)">
+          <i class="fa-solid fa-circle-info" style="margin-right:6px"></i> As chaves são salvas diretamente no banco de dados local (<code style="font-family:var(--mono)">flip.db</code>) e lidas a cada requisição — nenhuma reinicialização necessária.
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-robot" style="color:var(--orange);margin-right:6px;width:16px"></i> Anthropic API Key (Claude AI)</label>
+          <div style="position:relative">
+            <input id="cfg-anthropic" type="password" placeholder="sk-ant-..." style="padding-right:40px" />
+            <button onclick="toggleShow('cfg-anthropic',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer"><i class="fa-solid fa-eye"></i></button>
+          </div>
+          <div class="cfg-key-status" id="st-anthropic"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i> Configurada</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-image" style="color:var(--orange);margin-right:6px;width:16px"></i> OpenAI API Key (DALL-E)</label>
+          <div style="position:relative">
+            <input id="cfg-openai" type="password" placeholder="sk-..." style="padding-right:40px" />
+            <button onclick="toggleShow('cfg-openai',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer"><i class="fa-solid fa-eye"></i></button>
+          </div>
+          <div class="cfg-key-status" id="st-openai"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i> Configurada</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-brands fa-meta" style="color:var(--orange);margin-right:6px;width:16px"></i> Meta Access Token</label>
+          <div style="position:relative">
+            <input id="cfg-meta" type="password" placeholder="EAAxxxx..." style="padding-right:40px" />
+            <button onclick="toggleShow('cfg-meta',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer"><i class="fa-solid fa-eye"></i></button>
+          </div>
+          <div class="cfg-key-status" id="st-meta"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i> Configurada</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-brands fa-facebook" style="color:var(--orange);margin-right:6px;width:16px"></i> Facebook Page ID</label>
+          <input id="cfg-fbpage" placeholder="ID numérico da página" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:0">
+          <label><i class="fa-brands fa-instagram" style="color:var(--orange);margin-right:6px;width:16px"></i> Instagram Business Account ID</label>
+          <input id="cfg-igpage" placeholder="ID numérico da conta business" />
+        </div>
+      </div>
+
+      <div style="max-width:680px;display:flex;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="saveSettings()" style="min-width:180px;justify-content:center">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar no banco de dados
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"><i id="toast-icon" class="fa-solid fa-circle-check" style="color:var(--green)"></i><span id="toast-msg">Salvo!</span></div>
+
+<script>
+  const API = 'http://localhost:3001/api';
+
+  /* ── NAV ── */
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      const id = el.dataset.page;
+      document.getElementById('page-' + id).classList.add('active');
+      if (id === 'dashboard') loadDashboard();
+      if (id === 'clientes') loadClients();
+      if (id === 'aprovacao') loadApproval();
+      if (id === 'planner') renderCalendar();
+      if (id === 'trafego') loadTraffic();
+      if (id === 'configuracoes') loadSettings();
+    });
+  });
+
+  /* ── TOAST ── */
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    document.getElementById('toast-icon').style.color = error ? 'var(--red)' : 'var(--green)';
+    document.getElementById('toast-icon').className = error ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-check';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  /* ── STATUS MAP ── */
+  const STATUS = {
+    rascunho:                    ['Rascunho',          'status-gray'],
+    aguardando_aprovacao_flip:   ['Aguard. FLIP',      'status-yellow'],
+    aprovado_flip:               ['Aprovado FLIP',     'status-orange'],
+    aguardando_aprovacao_cliente:['Aguard. Cliente',   'status-yellow'],
+    aprovado_cliente:            ['Aprovado',          'status-green'],
+    agendado:                    ['Agendado',          'status-orange'],
+    publicado:                   ['Publicado',         'status-green'],
+    ativo:                       ['Ativo',             'status-green'],
+    inativo:                     ['Inativo',           'status-gray'],
+  };
+  function badge(s) {
+    const [l, c] = STATUS[s] || [s, 'status-gray'];
+    return `<span class="status ${c}">${l}</span>`;
+  }
+
+  /* ── DASHBOARD ── */
+  async function loadDashboard() {
+    try {
+      const r = await fetch(API + '/health');
+      document.getElementById('server-status').textContent = r.ok ? 'Online' : 'Offline';
+    } catch {
+      document.getElementById('server-status').textContent = 'Offline — inicie o servidor';
+      document.getElementById('server-status').style.color = 'var(--red)';
+    }
+
+    try {
+      const [clients, demands, pending] = await Promise.all([
+        fetch(API + '/clients?status=ativo').then(r => r.json()).catch(() => []),
+        fetch(API + '/demands').then(r => r.json()).catch(() => []),
+        fetch(API + '/demands/pending-counts').then(r => r.json()).catch(() => ({ total: 0 })),
+      ]);
+
+      document.getElementById('s-clients').textContent  = Array.isArray(clients) ? clients.length : '—';
+      document.getElementById('s-demands').textContent  = Array.isArray(demands) ? demands.length : '—';
+      document.getElementById('s-pending').textContent  = pending.total ?? '—';
+      document.getElementById('s-scheduled').textContent = Array.isArray(demands) ? demands.filter(d => d.status === 'agendado').length : '—';
+
+      const pb = document.getElementById('badge-pending');
+      if (pending.total > 0) { pb.textContent = pending.total; pb.style.display = ''; }
+
+      renderRecentDemands(Array.isArray(demands) ? demands.slice(0, 6) : []);
+    } catch {}
+  }
+
+  function renderRecentDemands(list) {
+    const el = document.getElementById('recent-demands');
+    if (!list.length) {
+      el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3)"><i class="fa-solid fa-inbox" style="font-size:24px;margin-bottom:8px;display:block"></i>Nenhuma demanda ainda</div>';
+      return;
+    }
+    el.innerHTML = list.map(d => `
+      <div class="demand-item" onclick="window.open('http://localhost:3000/demanda/${d.id}','_blank')">
+        <div class="demand-icon"><i class="fa-solid fa-file-image"></i></div>
+        <div class="demand-info">
+          <div class="demand-client">${d.client_name || d.client_name_avulso || 'Avulso'}</div>
+          <div class="demand-desc">${d.type} · ${d.objective || ''}</div>
+        </div>
+        ${badge(d.status)}
+      </div>`).join('');
+  }
+
+  /* ── CLIENTES ── */
+  async function loadClients() {
+    try {
+      const clients = await fetch(API + '/clients').then(r => r.json());
+      const el = document.getElementById('clients-table');
+      if (!clients.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><i class="fa-solid fa-users-slash" style="font-size:28px;margin-bottom:12px;display:block"></i>Nenhum cliente cadastrado</div>';
+        return;
+      }
+      el.innerHTML = `<table>
+        <thead><tr><th>Nome</th><th>Segmento</th><th>Status</th><th></th></tr></thead>
+        <tbody>${clients.map(c => `<tr>
+          <td>${c.name}</td>
+          <td style="color:var(--text3)">${c.segment || '—'}</td>
+          <td>${badge(c.status)}</td>
+          <td><a href="http://localhost:3000/clientes/${c.id}/editar" target="_blank" class="btn btn-ghost" style="font-size:11px;padding:4px 10px"><i class="fa-solid fa-pen"></i> Editar</a></td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } catch {
+      document.getElementById('clients-table').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Servidor offline. Inicie o servidor antes de usar.</div>';
+    }
+  }
+
+  /* ── APROVAÇÃO ── */
+  async function loadApproval() {
+    try {
+      const all = await fetch(API + '/demands').then(r => r.json());
+      const pending = all.filter(d => d.status === 'aguardando_aprovacao_flip' || d.status === 'aguardando_aprovacao_cliente');
+      const el = document.getElementById('approval-list');
+      if (!pending.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><i class="fa-solid fa-check-circle" style="font-size:28px;margin-bottom:12px;display:block;color:var(--green)"></i>Fila limpa! Nenhuma demanda pendente.</div>';
+        return;
+      }
+      el.innerHTML = pending.map(d => `
+        <div class="demand-item" onclick="window.open('http://localhost:3000/demanda/${d.id}','_blank')">
+          <div class="demand-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="demand-info">
+            <div class="demand-client">${d.client_name || d.client_name_avulso || 'Avulso'}</div>
+            <div class="demand-desc">${d.type} · ${d.objective || ''}</div>
+          </div>
+          ${badge(d.status)}
+        </div>`).join('');
+    } catch {
+      document.getElementById('approval-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Servidor offline.</div>';
+    }
+  }
+
+  /* ── TRÁFEGO ── */
+  async function loadTraffic() {
+    try {
+      const data = await fetch(API + '/meta/insights/1').then(r => r.json());
+      if (data.data) {
+        const find = (metric) => {
+          const item = data.data.find(d => d.name === metric);
+          return item?.values?.[0]?.value ?? '—';
+        };
+        document.getElementById('t-impressions').textContent = find('page_impressions').toLocaleString?.() ?? find('page_impressions');
+        document.getElementById('t-reach').textContent = find('page_reach').toLocaleString?.() ?? find('page_reach');
+        document.getElementById('t-engagement').textContent = find('page_engaged_users').toLocaleString?.() ?? find('page_engaged_users');
+      }
+    } catch {}
+  }
+
+  /* ── PLANNER ── */
+  let calDate = new Date();
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DAYS   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  function renderCalendar() {
+    const y = calDate.getFullYear(), m = calDate.getMonth();
+    const today = new Date();
+    document.getElementById('cal-label').textContent = `${MONTHS[m]} ${y}`;
+    document.getElementById('cal-headers').innerHTML = DAYS.map(d => `<div class="cal-header">${d}</div>`).join('');
+    const first = new Date(y, m, 1).getDay();
+    const total = new Date(y, m + 1, 0).getDate();
+    const prev  = new Date(y, m, 0).getDate();
+    let html = '';
+    for (let i = 0; i < first; i++) html += `<div class="cal-day other-month">${prev - first + 1 + i}</div>`;
+    for (let d = 1; d <= total; d++) {
+      const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
+      html += `<div class="cal-day${isToday ? ' today' : ''}">${d}</div>`;
+    }
+    document.getElementById('cal-days').innerHTML = html;
+  }
+
+  function changeMonth(dir) { calDate.setMonth(calDate.getMonth() + dir); renderCalendar(); }
+
+  /* ── CONFIGURAÇÕES ── */
+  function toggleShow(id, btn) {
+    const el = document.getElementById(id);
+    const show = el.type === 'password';
+    el.type = show ? 'text' : 'password';
+    btn.querySelector('i').className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  }
+
+  async function loadSettings() {
+    try {
+      const s = await fetch(API + '/settings').then(r => r.json());
+      document.getElementById('cfg-owner1').value   = s.owner_1 || '';
+      document.getElementById('cfg-owner2').value   = s.owner_2 || '';
+      document.getElementById('cfg-anthropic').value = s.ANTHROPIC_API_KEY || '';
+      document.getElementById('cfg-openai').value   = s.OPENAI_API_KEY || '';
+      document.getElementById('cfg-meta').value     = s.META_ACCESS_TOKEN || '';
+      document.getElementById('cfg-fbpage').value   = s.META_PAGE_ID_FACEBOOK || '';
+      document.getElementById('cfg-igpage').value   = s.META_PAGE_ID_INSTAGRAM || '';
+
+      const show = (id, val) => { const el = document.getElementById(id); if (val) el.classList.add('show'); else el.classList.remove('show'); };
+      show('st-anthropic', s.ANTHROPIC_API_KEY);
+      show('st-openai',    s.OPENAI_API_KEY);
+      show('st-meta',      s.META_ACCESS_TOKEN);
+    } catch { showToast('Servidor offline. Inicie o servidor.', true); }
+  }
+
+  async function saveSettings() {
+    try {
+      const body = {
+        owner_1:               document.getElementById('cfg-owner1').value,
+        owner_2:               document.getElementById('cfg-owner2').value,
+        ANTHROPIC_API_KEY:     document.getElementById('cfg-anthropic').value,
+        OPENAI_API_KEY:        document.getElementById('cfg-openai').value,
+        META_ACCESS_TOKEN:     document.getElementById('cfg-meta').value,
+        META_PAGE_ID_FACEBOOK: document.getElementById('cfg-fbpage').value,
+        META_PAGE_ID_INSTAGRAM:document.getElementById('cfg-igpage').value,
+      };
+      const r = await fetch(API + '/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error();
+      showToast('Configurações salvas no banco de dados local!');
+      loadSettings();
+    } catch { showToast('Erro ao salvar. Servidor offline?', true); }
+  }
+
+  /* ── INIT ── */
+  loadDashboard();
+  renderCalendar();
+</script>
+</body>
+</html>
