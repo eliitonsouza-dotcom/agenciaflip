@@ -1019,21 +1019,35 @@ async function generateImages(){
   try{
     const results=await Promise.all(formats.map(async(f,i)=>{
       if(s.OPENAI_KEY){
-        const r=await fetch('https://api.openai.com/v1/images/generations',{
-          method:'POST',headers:{'Authorization':`Bearer ${s.OPENAI_KEY}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model:'dall-e-3',prompt,n:1,size:f.size,quality:'standard'})
-        });
-        const d=await r.json();
-        if(d.error)throw new Error(d.error.message);
-        return{url:d.data[0].url,type:f.type,idx:i};
+        try{
+          const r=await fetch('https://api.openai.com/v1/images/generations',{
+            method:'POST',headers:{'Authorization':`Bearer ${s.OPENAI_KEY}`,'Content-Type':'application/json'},
+            body:JSON.stringify({model:'dall-e-3',prompt,n:1,size:f.size,quality:'standard'})
+          });
+          const d=await r.json();
+          if(d.error)throw new Error(d.error.message);
+          return{url:d.data[0].url,type:f.type,idx:i,via:'dall-e-3'};
+        }catch(e){
+          // Fallback automático para Pollinations se DALL-E não disponível
+          console.warn('DALL-E falhou, usando Pollinations.ai:',e.message);
+          const w=f.type==='story'?1080:1080,h=f.type==='story'?1920:1080;
+          const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${Date.now()+i}`;
+          return{url,type:f.type,idx:i,via:'pollinations',warn:e.message};
+        }
       }else{
         const w=f.type==='story'?1080:1080,h=f.type==='story'?1920:1080;
         const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${Date.now()+i}`;
-        return{url,type:f.type,idx:i};
+        return{url,type:f.type,idx:i,via:'pollinations'};
       }
     }));
     generatedImages=results;
-    $('img-results').innerHTML=`<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;margin-top:12px">`+
+    const usedFallback=results.some(r=>r.via==='pollinations'&&r.warn);
+    if(usedFallback){
+      const warn=results.find(r=>r.warn)?.warn||'';
+      toast(`DALL-E indisponível → usando Pollinations.ai gratuito. (${warn.includes('exist')?'Adicione créditos em platform.openai.com/billing':warn})`,true);
+    }
+    $('img-results').innerHTML=(usedFallback?`<div style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.2);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--yellow);margin-bottom:10px"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px"></i>Usando <strong>Pollinations.ai</strong> (gratuito) — DALL-E 3 requer créditos em <strong>platform.openai.com/billing</strong></div>`:'')+
+    `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;margin-top:12px">`+
       results.map((r,i)=>`
         <div class="img-card ${r.type}" id="img-card-${i}" onclick="selectImage(${i})">
           <img src="${r.url}" alt="${r.type}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect fill=%22%23242424%22 width=%22200%22 height=%22200%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2214%22>Erro ao carregar</text></svg>'"/>
