@@ -528,7 +528,12 @@ td:first-child{color:var(--text);font-weight:600}
 <div id="page-trafego" class="page">
   <div class="ph">
     <div><div class="pt">Tráfego</div><div class="ps">Campanhas e métricas Meta Ads</div></div>
-    <button class="btn btn-ghost" onclick="loadMetrics()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="trafego-client" style="width:200px;padding:7px 10px;font-size:12px" onchange="loadMetrics()">
+        <option value="">— Selecionar cliente —</option>
+      </select>
+      <button class="btn btn-ghost" onclick="loadMetrics()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+    </div>
   </div>
   <div id="no-meta-token" class="card" style="margin-bottom:18px;text-align:center;padding:28px;display:none">
     <i class="fa-brands fa-meta" style="font-size:32px;color:var(--orange);display:block;margin-bottom:10px"></i>
@@ -597,11 +602,6 @@ td:first-child{color:var(--text);font-weight:600}
         <label><i class="fa-brands fa-meta" style="color:var(--orange);margin-right:5px"></i> Meta Access Token (Business Manager)</label>
         <div style="position:relative"><input id="cfg-meta" type="password" placeholder="EAAxxxx..."/><button onclick="toggleShow('cfg-meta',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer"><i class="fa-solid fa-eye"></i></button></div>
         <div class="ks" id="st-meta"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Configurado</div>
-      </div>
-
-      <div class="fr">
-        <div class="fg"><label>Facebook Page ID</label><input id="cfg-fbid" placeholder="ID numérico"/></div>
-        <div class="fg"><label>Instagram Business Account ID</label><input id="cfg-igid" placeholder="ID numérico"/></div>
       </div>
 
       <div class="fg">
@@ -730,7 +730,7 @@ $('schedule-overlay').addEventListener('click',e=>{if(e.target===$('schedule-ove
 function loadSettings(){
   const s=getSettings();
   setVal('cfg-openai',s.OPENAI_KEY); setVal('cfg-openai-model',s.OPENAI_MODEL||'gpt-4o');
-  setVal('cfg-meta',s.META_TOKEN); setVal('cfg-fbid',s.META_FB_ID); setVal('cfg-igid',s.META_IG_ID);
+  setVal('cfg-meta',s.META_TOKEN);
   setVal('cfg-anthropic',s.ANTHROPIC_KEY); setVal('cfg-gemini',s.GEMINI_KEY);
   setVal('cfg-username',s.username||'Tom'); setVal('cfg-agency',s.agency||'Agência FLIP');
   ['openai','meta','anthropic','gemini'].forEach(k=>{
@@ -742,7 +742,7 @@ function loadSettings(){
 function saveSettings(){
   const s=getSettings();
   s.OPENAI_KEY=val('cfg-openai'); s.OPENAI_MODEL=val('cfg-openai-model');
-  s.META_TOKEN=val('cfg-meta'); s.META_FB_ID=val('cfg-fbid'); s.META_IG_ID=val('cfg-igid');
+  s.META_TOKEN=val('cfg-meta');
   s.ANTHROPIC_KEY=val('cfg-anthropic'); s.GEMINI_KEY=val('cfg-gemini');
   s.username=val('cfg-username')||'Tom'; s.agency=val('cfg-agency')||'Agência FLIP';
   DB.set('settings',s);
@@ -1262,8 +1262,8 @@ async function confirmSchedule(){
   try{
     if(platform==='instagram'||platform==='both'){
       const clientId=d.client_id;const client=getClients().find(c=>c.id===clientId);
-      const igId=client?.ig_account_id||s.META_IG_ID;
-      if(!igId){toast('Configure o Instagram Business ID no cliente ou nas configurações',true);return;}
+      const igId=client?.ig_account_id;
+      if(!igId){toast('Configure o Instagram Business ID na ficha do cliente.',true);return;}
       // Create media container
       const r1=await fetch(`https://graph.facebook.com/v19.0/${igId}/media`,{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -1281,8 +1281,8 @@ async function confirmSchedule(){
     }
     if(platform==='facebook'||platform==='both'){
       const clientId=d.client_id;const client=getClients().find(c=>c.id===clientId);
-      const fbId=client?.fb_page_id||s.META_FB_ID;
-      if(!fbId){toast('Configure o Facebook Page ID no cliente ou nas configurações',true);return;}
+      const fbId=client?.fb_page_id;
+      if(!fbId){toast('Configure o Facebook Page ID na ficha do cliente.',true);return;}
       const r=await fetch(`https://graph.facebook.com/v19.0/${fbId}/photos`,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({url:imageUrl,message:caption,scheduled_publish_time:publishTime,published:false,access_token:s.META_TOKEN})
@@ -1343,12 +1343,17 @@ async function loadTrafego(){
   const s=getSettings();
   if(!s.META_TOKEN){$('no-meta-token').style.display='block';return;}
   $('no-meta-token').style.display='none';
+  const sel=$('trafego-client');
+  const prev=sel.value;
+  const clients=getClients().filter(c=>c.status==='ativo'&&c.fb_page_id);
+  sel.innerHTML='<option value="">— Selecionar cliente —</option>'+clients.map(c=>`<option value="${c.fb_page_id}">${c.name}</option>`).join('');
+  if(prev)sel.value=prev;
 }
 async function loadMetrics(){
   const s=getSettings();
   if(!s.META_TOKEN){toast('Configure o Meta Access Token',true);navigate('configuracoes');return;}
-  const fbId=s.META_FB_ID;
-  if(!fbId){toast('Configure o Facebook Page ID',true);return;}
+  const fbId=$('trafego-client').value;
+  if(!fbId){toast('Selecione um cliente para ver as métricas.',true);return;}
   try{
     const url=`https://graph.facebook.com/v19.0/${fbId}/insights?metric=page_impressions,page_reach,page_engaged_users&period=month&access_token=${s.META_TOKEN}`;
     const r=await fetch(url);const data=await r.json();
