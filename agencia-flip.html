@@ -318,7 +318,10 @@ td:first-child{color:var(--text);font-weight:600}
 <div id="page-clientes" class="page">
   <div class="ph">
     <div><div class="pt">Clientes</div><div class="ps">Carteira de clientes</div></div>
-    <button class="btn btn-primary" onclick="togglePanel('client-panel')"><i class="fa-solid fa-plus"></i> Novo Cliente</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="syncInstagram()" id="btn-sync-ig"><i class="fa-brands fa-instagram"></i> Sincronizar Instagram</button>
+      <button class="btn btn-primary" onclick="togglePanel('client-panel')"><i class="fa-solid fa-plus"></i> Novo Cliente</button>
+    </div>
   </div>
 
   <!-- Client form panel -->
@@ -1392,6 +1395,42 @@ async function sendChat(){
     document.getElementById('ai-thinking').outerHTML=`<div class="msg msg-ai" style="color:var(--red)">Erro: ${e.message}</div>`;
   }
   msgs.scrollTop=msgs.scrollHeight;
+}
+
+/* ════════════════════════════════════════════
+   SINCRONIZAR INSTAGRAM
+════════════════════════════════════════════ */
+async function syncInstagram(){
+  const s=getSettings();
+  if(!s.META_TOKEN){toast('Configure o Token do Meta em Configurações → APIs primeiro.',true);return;}
+  const btn=$('btn-sync-ig');
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+  try{
+    const r=await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account&access_token=${s.META_TOKEN}`);
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message);
+    const clients=getClients();
+    let updated=0,found=0;
+    data.data.forEach(page=>{
+      if(!page.instagram_business_account)return;
+      found++;
+      const igId=page.instagram_business_account.id;
+      const idx=clients.findIndex(c=>c.fb_page_id===page.id);
+      if(idx>=0&&clients[idx].ig_account_id!==igId){
+        clients[idx].ig_account_id=igId;
+        updated++;
+      }
+    });
+    DB.set('clients',clients);
+    loadClients();
+    if(updated>0)toast(`✓ ${updated} cliente(s) com Instagram atualizado(s)!`);
+    else if(found>0)toast(`Instagram já estava atualizado em ${found} cliente(s).`);
+    else toast('Nenhuma página com Instagram Business encontrada. Converta as contas para Business no app do Instagram.',true);
+  }catch(e){
+    toast('Erro: '+e.message,true);
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="fa-brands fa-instagram"></i> Sincronizar Instagram';
+  }
 }
 
 /* ════════════════════════════════════════════
