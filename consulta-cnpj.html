@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta CNPJ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ─── Formatters ──────────────────────────────────────────────────────────
+
+    function maskCNPJ(raw) {
+      const d = raw.replace(/\D/g, '').slice(0, 14);
+      if (d.length <= 2)  return d;
+      if (d.length <= 5)  return `${d.slice(0,2)}.${d.slice(2)}`;
+      if (d.length <= 8)  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
+      if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
+      return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+    }
+
+    function isValidCNPJ(value) {
+      const d = value.replace(/\D/g, '');
+      if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
+      const sum = (digits, weights) =>
+        digits.split('').reduce((acc, n, i) => acc + parseInt(n) * weights[i], 0);
+      const r1 = sum(d.slice(0,12), [5,4,3,2,9,8,7,6,5,4,3,2]) % 11;
+      if (parseInt(d[12]) !== (r1 < 2 ? 0 : 11 - r1)) return false;
+      const r2 = sum(d.slice(0,13), [6,5,4,3,2,9,8,7,6,5,4,3,2]) % 11;
+      return parseInt(d[13]) === (r2 < 2 ? 0 : 11 - r2);
+    }
+
+    const formatCNPJ = v =>
+      String(v).replace(/\D/g,'').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+
+    const formatCEP = v =>
+      String(v).replace(/\D/g,'').replace(/^(\d{5})(\d{3})$/,'$1-$2');
+
+    function formatPhone(v) {
+      const d = String(v).replace(/\D/g,'');
+      if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3');
+      if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/,'($1) $2-$3');
+      return v;
+    }
+
+    function formatDate(v) {
+      if (!v) return null;
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v);
+    }
+
+    const formatCurrency = v => {
+      const n = parseFloat(v);
+      return isNaN(n) ? String(v) : n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+    };
+
+    function autoFormat(key, value) {
+      if (value === null || value === undefined || value === '') return null;
+      if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+      const k = key.toLowerCase(), s = String(value);
+      if (k.includes('cnpj') && /^\d{14}$/.test(s.replace(/\D/g,''))) return formatCNPJ(s);
+      if ((k === 'cep' || k.includes('cep')) && /^\d{8}$/.test(s.replace(/\D/g,''))) return formatCEP(s);
+      if ((k.includes('telefone')||k.includes('fone')) && /^\d{10,11}$/.test(s.replace(/\D/g,''))) return formatPhone(s);
+      if ((k.includes('capital')||k.includes('capital_social')) && !isNaN(parseFloat(s))) return formatCurrency(s);
+      if (k.includes('data')||k.includes('abertura')) return formatDate(s);
+      return s;
+    }
+
+    const friendlyLabel = key =>
+      key.replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\b\w/g,c=>c.toUpperCase());
+
+    function countFields(obj, counts = { filled:0, empty:0 }) {
+      if (obj === null || obj === undefined) return counts;
+      if (Array.isArray(obj)) obj.forEach(i => countFields(i, counts));
+      else if (typeof obj === 'object') Object.values(obj).forEach(v => countFields(v, counts));
+      else { (obj===''||obj===null||obj===undefined) ? counts.empty++ : counts.filled++; }
+      return counts;
+    }
+
+    // ─── SituacaoBadge ───────────────────────────────────────────────────────
+
+    function SituacaoBadge({ situacao }) {
+      if (!situacao) return null;
+      const u = String(situacao).toUpperCase();
+      const isAtiva    = u === 'ATIVA';
+      const isBaixa    = u.includes('BAIX');
+      const isSuspensa = u.includes('SUSPENS') || u.includes('INAPT');
+      const cls = isAtiva ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+        : isBaixa   ? 'bg-slate-100 text-slate-600 border-slate-200'
+        : isSuspensa ? 'bg-amber-100 text-amber-700 border-amber-200'
+        : 'bg-red-100 text-red-700 border-red-200';
+      const dot = isAtiva ? 'bg-emerald-500' : isBaixa ? 'bg-slate-400' : isSuspensa ? 'bg-amber-500' : 'bg-red-500';
+      return (
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${cls}`}>
+          <span className={`w-2 h-2 rounded-full ${dot}`} />
+          {situacao}
+        </span>
+      );
+    }
+
+    // ─── SearchBar ───────────────────────────────────────────────────────────
+
+    function SearchBar({ onSearch, loading }) {
+      const [value, setValue] = useState('');
+      const [error, setError] = useState('');
+
+      function handleChange(e) {
+        setValue(maskCNPJ(e.target.value));
+        if (error) setError('');
+      }
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        const digits = value.replace(/\D/g,'');
+        if (!digits.length)     { setError('Informe um CNPJ para consultar.'); return; }
+        if (digits.length !== 14) { setError('O CNPJ deve ter 14 dígitos.'); return; }
+        if (!isValidCNPJ(digits)) { setError('CNPJ inválido. Verifique os dígitos informados.'); return; }
+        setError('');
+        onSearch(digits);
+      }
+
+      const complete = value.replace(/\D/g,'').length === 14;
+
+      return (
+        <div className="w-full max-w-2xl mx-auto">
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <label htmlFor="cnpj" className="block text-sm font-medium text-slate-600 mb-1.5">
+                  CNPJ da empresa
+                </label>
+                <input
+                  id="cnpj"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="00.000.000/0000-00"
+                  value={value}
+                  onChange={handleChange}
+                  disabled={loading}
+                  maxLength={18}
+                  className={`w-full px-4 py-3 text-lg font-mono tracking-wider rounded-xl border-2 outline-none bg-white shadow-sm transition-colors
+                    ${error    ? 'border-red-400'
+                    : complete ? 'border-emerald-400'
+                    :            'border-slate-200 focus:border-blue-400'}
+                    ${loading  ? 'opacity-60 cursor-not-allowed' : ''}
+                  `}
+                />
+                {error && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                    </svg>
+                    {error}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-sm transition-all
+                    ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}
+                  `}
+                >
+                  {loading
+                    ? <svg className="w-5 h-5 spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                    : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                      </svg>
+                  }
+                  {loading ? 'Consultando...' : 'Consultar'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    // ─── ErrorAlert ──────────────────────────────────────────────────────────
+
+    function ErrorAlert({ message }) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 items-start">
+          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"/>
+          </svg>
+          <div>
+            <p className="font-semibold text-red-700">Erro na consulta</p>
+            <p className="text-sm text-red-600 mt-0.5">{message}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── LoadingSkeleton ─────────────────────────────────────────────────────
+
+    function Sk({ cls }) {
+      return <div className={`pulse bg-slate-200 rounded-lg ${cls}`} />;
+    }
+
+    function LoadingSkeleton() {
+      return (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+            <div className="bg-blue-100 px-6 py-5 space-y-2">
+              <Sk cls="h-3 w-32 bg-blue-200" />
+              <Sk cls="h-6 w-64 bg-blue-200" />
+              <Sk cls="h-3 w-48 bg-blue-200" />
+            </div>
+            <div className="p-6 space-y-6">
+              {[1,2,3].map(s => (
+                <div key={s}>
+                  <Sk cls="h-3 w-24 mb-3" />
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className="space-y-1.5">
+                        <Sk cls="h-3 w-20" />
+                        <Sk cls="h-4 w-36" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── CompanySummary ──────────────────────────────────────────────────────
+
+    function InfoItem({ label, value, mono }) {
+      if (value === null || value === undefined || value === '') return null;
+      return (
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
+          <dd className={`mt-0.5 text-sm text-slate-800 ${mono ? 'font-mono' : ''}`}>{value}</dd>
+        </div>
+      );
+    }
+
+    function Section({ title, children }) {
+      return (
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 pb-1 border-b border-slate-100">
+            {title}
+          </h3>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</dl>
+        </div>
+      );
+    }
+
+    function CompanySummary({ data }) {
+      if (!data) return null;
+      const cnae = data.cnae_fiscal_descricao
+        ? `${data.cnae_fiscal} — ${data.cnae_fiscal_descricao}`
+        : data.cnae_fiscal;
+      const endereco = [
+        data.logradouro && `${data.descricao_tipo_de_logradouro || ''} ${data.logradouro}`.trim(),
+        data.numero && `Nº ${data.numero}`,
+        data.complemento,
+        data.bairro,
+      ].filter(Boolean).join(', ');
+      const cidadeUF = [data.municipio, data.uf].filter(Boolean).join(' / ');
+      const tel1 = data.ddd_telefone_1 ? formatPhone(String(data.ddd_telefone_1)) : null;
+      const tel2 = data.ddd_telefone_2 ? formatPhone(String(data.ddd_telefone_2)) : null;
+      const inscrEstadual = data.inscricoes_estaduais?.length
+        ? data.inscricoes_estaduais.map(i => `${i.inscricao_estadual} (${i.estado||i.uf||''})`).join(' · ')
+        : null;
+      const situacao = data.descricao_situacao_cadastral || data.situacao_cadastral || data.situacao;
+
+      return (
+        <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-1">
+                  Empresa encontrada
+                </p>
+                <h2 className="text-xl font-bold leading-tight">{data.razao_social || '—'}</h2>
+                {data.nome_fantasia && data.nome_fantasia !== data.razao_social && (
+                  <p className="text-blue-200 text-sm mt-1">{data.nome_fantasia}</p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                {situacao && <SituacaoBadge situacao={situacao} />}
+                {data.cnpj && (
+                  <span className="font-mono text-sm bg-blue-800/40 px-2.5 py-1 rounded-lg text-blue-100">
+                    {formatCNPJ(data.cnpj)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-6 space-y-6">
+            <Section title="Identificação">
+              <InfoItem label="Razão Social"      value={data.razao_social} />
+              <InfoItem label="Nome Fantasia"     value={data.nome_fantasia} />
+              <InfoItem label="CNPJ"              value={data.cnpj ? formatCNPJ(data.cnpj) : null} mono />
+              <InfoItem label="Data de Abertura"  value={formatDate(data.data_inicio_atividade)} />
+              <InfoItem label="Natureza Jurídica" value={data.descricao_natureza_juridica || data.natureza_juridica} />
+              <InfoItem label="Porte"             value={data.descricao_porte || data.porte} />
+              <InfoItem label="Capital Social"    value={data.capital_social != null ? formatCurrency(data.capital_social) : null} />
+            </Section>
+
+            <Section title="Atividade">
+              <InfoItem label="CNAE Principal" value={cnae} />
+              {data.cnaes_secundarios?.length > 0 && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                    CNAEs Secundários
+                  </dt>
+                  <dd className="space-y-1">
+                    {data.cnaes_secundarios.map((c, i) => (
+                      <div key={i} className="text-sm text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg">
+                        {c.codigo} — {c.descricao}
+                      </div>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </Section>
+
+            <Section title="Contato">
+              <InfoItem label="Telefone"   value={tel1} />
+              <InfoItem label="Telefone 2" value={tel2} />
+              <InfoItem label="E-mail"     value={data.email} />
+            </Section>
+
+            <Section title="Endereço">
+              <div className="sm:col-span-2">
+                <InfoItem label="Logradouro" value={endereco} />
+              </div>
+              <InfoItem label="Cidade / UF" value={cidadeUF} />
+              <InfoItem label="CEP"         value={data.cep ? formatCEP(data.cep) : null} mono />
+            </Section>
+
+            {inscrEstadual && (
+              <Section title="Inscrições Estaduais">
+                <div className="sm:col-span-2">
+                  <InfoItem label="Inscrições" value={inscrEstadual} />
+                </div>
+              </Section>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── ObjectRenderer (recursive) ──────────────────────────────────────────
+
+    function PrimitiveValue({ fieldKey, value }) {
+      if (value === null || value === undefined)
+        return <span className="text-slate-300 italic text-xs">nulo</span>;
+      if (typeof value === 'boolean')
+        return (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
+            ${value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+            {value ? 'Sim' : 'Não'}
+          </span>
+        );
+      const formatted = autoFormat(fieldKey, value);
+      return <span className="text-slate-700 text-sm break-words">{formatted ?? String(value)}</span>;
+    }
+
+    function ObjectRenderer({ obj, depth }) {
+      depth = depth || 0;
+      if (obj === null || obj === undefined)
+        return <span className="text-slate-300 italic text-xs">nulo</span>;
+      if (typeof obj !== 'object')
+        return <PrimitiveValue fieldKey="" value={obj} />;
+
+      return (
+        <dl className="space-y-3">
+          {Object.entries(obj).map(([key, value]) => {
+            const label  = friendlyLabel(key);
+            const empty  = value === null || value === undefined || value === '';
+            const isArr  = Array.isArray(value);
+            const isObj  = !isArr && typeof value === 'object' && value !== null;
+
+            return (
+              <div key={key} className={isObj || isArr ? '' : 'flex flex-wrap gap-x-3 items-baseline'}>
+                <dt className={`text-xs font-semibold uppercase tracking-wide shrink-0
+                  ${empty ? 'text-slate-300' : 'text-slate-400'}`}>
+                  {label}
+                </dt>
+
+                {empty ? (
+                  <dd className="text-slate-300 italic text-xs">—</dd>
+                ) : isArr ? (
+                  <dd className="w-full mt-1">
+                    {value.length === 0
+                      ? <span className="text-slate-300 italic text-xs">lista vazia</span>
+                      : typeof value[0] === 'object' && value[0] !== null
+                        ? <div className="space-y-2">
+                            {value.map((item, i) => (
+                              <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
+                                  Item {i + 1}
+                                </p>
+                                <ObjectRenderer obj={item} depth={depth + 1} />
+                              </div>
+                            ))}
+                          </div>
+                        : <div className="flex flex-wrap gap-1.5">
+                            {value.map((item, i) => (
+                              <span key={i} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
+                                <PrimitiveValue fieldKey={key} value={item} />
+                              </span>
+                            ))}
+                          </div>
+                    }
+                  </dd>
+                ) : isObj ? (
+                  <dd className="w-full mt-1 pl-3 border-l-2 border-slate-100">
+                    <ObjectRenderer obj={value} depth={depth + 1} />
+                  </dd>
+                ) : (
+                  <dd><PrimitiveValue fieldKey={key} value={value} /></dd>
+                )}
+              </div>
+            );
+          })}
+        </dl>
+      );
+    }
+
+    // ─── FullDataSection ─────────────────────────────────────────────────────
+
+    function FullDataSection({ data }) {
+      const [showJson, setShowJson] = useState(false);
+      const [copied,   setCopied]   = useState(false);
+      const { filled, empty } = countFields(data);
+      const jsonStr = JSON.stringify(data, null, 2);
+
+      function handleCopy() {
+        navigator.clipboard.writeText(jsonStr).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }
+
+      return (
+        <div className="space-y-4">
+          {/* Stats + action bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-100 rounded-xl px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <span className="text-slate-600">
+                  <span className="font-bold text-emerald-600">{filled}</span> campos preenchidos
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                <span className="text-slate-500">
+                  <span className="font-bold text-slate-400">{empty}</span> campos vazios
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowJson(v => !v)}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                </svg>
+                {showJson ? 'Ocultar JSON' : 'Ver JSON bruto'}
+              </button>
+              <button
+                onClick={handleCopy}
+                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors
+                  ${copied
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {copied
+                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  }
+                </svg>
+                {copied ? 'Copiado!' : 'Copiar JSON'}
+              </button>
+            </div>
+          </div>
+
+          {/* Raw JSON */}
+          {showJson && (
+            <div className="bg-slate-900 rounded-xl overflow-auto shadow-md">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">JSON bruto</span>
+                <div className="flex gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-red-500/70"/>
+                  <span className="w-3 h-3 rounded-full bg-yellow-500/70"/>
+                  <span className="w-3 h-3 rounded-full bg-green-500/70"/>
+                </div>
+              </div>
+              <pre className="text-xs text-emerald-300 p-4 overflow-x-auto leading-relaxed">{jsonStr}</pre>
+            </div>
+          )}
+
+          {/* Structured full data */}
+          <div className="bg-white rounded-2xl shadow-md border border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-700">Dados completos da API</h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Todos os campos retornados pela API, renderizados automaticamente.
+              </p>
+            </div>
+            <div className="p-6">
+              <ObjectRenderer obj={data} depth={0} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── App ─────────────────────────────────────────────────────────────────
+
+    function resolveError(err, status) {
+      if (!navigator.onLine) return 'Sem conexão com a internet. Verifique sua rede.';
+      if (status === 404) return 'CNPJ não encontrado na base de dados da Receita Federal.';
+      if (status === 429) return 'Muitas consultas em sequência. Aguarde alguns segundos e tente novamente.';
+      if (status >= 500) return 'Serviço da Receita Federal indisponível no momento. Tente mais tarde.';
+      if (err instanceof TypeError) return 'Erro de conexão. Verifique sua internet ou tente novamente.';
+      return 'Resposta inesperada da API. Tente novamente.';
+    }
+
+    function App() {
+      const [loading, setLoading] = useState(false);
+      const [data,    setData]    = useState(null);
+      const [error,   setError]   = useState(null);
+
+      async function handleSearch(cnpj) {
+        setLoading(true);
+        setData(null);
+        setError(null);
+        try {
+          const res = await fetch(`https://publica.cnpj.ws/cnpj/${cnpj}`);
+          if (!res.ok) { setError(resolveError(null, res.status)); return; }
+          let json;
+          try { json = await res.json(); }
+          catch { setError('A API retornou uma resposta inválida. Tente novamente.'); return; }
+          if (!json || typeof json !== 'object') { setError('Resposta inesperada da API.'); return; }
+          setData(json);
+        } catch(err) {
+          setError(resolveError(err, null));
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      return (
+        <div className="min-h-screen" style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#eff6ff 50%,#f1f5f9 100%)' }}>
+
+          {/* Header */}
+          <header className="bg-white border-b border-slate-200 shadow-sm">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shrink-0">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-slate-800 leading-tight">Consulta CNPJ</h1>
+                <p className="text-xs text-slate-400">Receita Federal do Brasil · API Pública</p>
+              </div>
+            </div>
+          </header>
+
+          {/* Search section */}
+          <section className="bg-white border-b border-slate-100 shadow-sm">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+              <p className="text-sm text-slate-500 text-center mb-5">
+                Consulte gratuitamente dados cadastrais de qualquer empresa brasileira.
+              </p>
+              <SearchBar onSearch={handleSearch} loading={loading} />
+            </div>
+          </section>
+
+          {/* Results */}
+          <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+            {loading && <LoadingSkeleton />}
+
+            {!loading && error && <ErrorAlert message={error} />}
+
+            {!loading && data && (
+              <>
+                <CompanySummary data={data} />
+                <FullDataSection data={data} />
+              </>
+            )}
+
+            {!loading && !data && !error && (
+              <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
+                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4 text-slate-300">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <p className="font-medium text-slate-500">Nenhuma consulta realizada ainda</p>
+                <p className="text-sm mt-1">Informe um CNPJ acima para começar.</p>
+              </div>
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-slate-200 mt-8">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 text-center text-xs text-slate-400">
+              Dados fornecidos pela API pública <span className="font-mono">publica.cnpj.ws</span>.
+              Uso exclusivo para fins informativos.
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
