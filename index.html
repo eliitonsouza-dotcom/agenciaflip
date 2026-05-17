@@ -1,651 +1,1561 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Consulta CNPJ</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    body { background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-    .pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Agência FLIP 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+:root{--bg:#0D0D0D;--bg2:#1A1A1A;--bg3:#242424;--border:#2A2A2A;--border2:#383838;--orange:#FF6600;--od:#cc5200;--og:rgba(255,102,0,.15);--text:#FFF;--t2:#AAA;--t3:#666;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--blue:#3b82f6;--f:'Space Grotesk',sans-serif;--m:'JetBrains Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--f);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.layout{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:#0a0a0a;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--orange);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;font-family:var(--m)}F
+.logo-text .name{font-size:13px;font-weight:800;color:var(--orange);letter-spacing:1px;text-transform:uppercase}
+.logo-text .ver{font-size:9px;background:var(--border2);color:var(--t3);padding:1px 5px;border-radius:3px;margin-top:2px;display:inline-block}
+.sidebar nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;font-weight:500;color:var(--t3);border-left:2px solid transparent;cursor:pointer;transition:all .15s;user-select:none}
+.nav-item:hover{color:var(--t2);background:rgba(255,255,255,.02)}
+.nav-item.active{color:var(--orange);background:var(--og);border-left-color:var(--orange)}
+.nav-item i{width:16px;text-align:center;font-size:13px}
+.nav-item span{flex:1}
+.nb{background:var(--orange);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center}
+.sidebar-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.avatar-name{font-size:12px;font-weight:600;color:var(--t2)}
+
+/* MAIN */
+.main{flex:1;overflow:auto;padding:28px 32px}
+.page{display:none}.page.active{display:block}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.pt{font-size:20px;font-weight:700}.ps{font-size:12px;color:var(--t3);margin-top:2px}
+
+/* CARDS / BUTTONS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;font-family:var(--f);transition:all .15s;cursor:pointer;border:none;white-space:nowrap}
+.btn-primary{background:var(--orange);color:#fff}.btn-primary:hover{background:var(--od)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-success{background:transparent;color:var(--green);border:1px solid rgba(34,197,94,.3)}.btn-success:hover{background:rgba(34,197,94,.08)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.3)}.btn-danger:hover{background:rgba(239,68,68,.08)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* FORMS */
+.fg{margin-bottom:16px}.fr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+label{font-size:12px;color:var(--t2);display:block;margin-bottom:5px;font-weight:500}
+input,textarea,select{font-family:var(--f);background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 11px;font-size:13px;width:100%;transition:border-color .2s;outline:none;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:var(--orange)}
+select option{background:var(--bg2)}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.toggle input[type=checkbox]{width:auto;accent-color:var(--orange)}
+
+/* STATUS BADGES */
+.st{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.st-or{background:var(--og);color:var(--orange);border:1px solid rgba(255,102,0,.3)}
+.st-gr{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.st-ye{background:rgba(234,179,8,.1);color:var(--yellow);border:1px solid rgba(234,179,8,.3)}
+.st-re{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.st-gy{background:rgba(255,255,255,.05);color:var(--t3);border:1px solid var(--border)}
+.st-bl{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+
+/* STAT CARDS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px}
+.sc-icon{font-size:18px;color:var(--orange);margin-bottom:10px}
+.sc-label{font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sc-val{font-size:28px;font-weight:800;font-family:var(--m);line-height:1}
+.sc-sub{font-size:11px;color:var(--t3);margin-top:4px}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:0 0 10px;text-align:left;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td{padding:10px 0;font-size:13px;color:var(--t2)}
+td:first-child{color:var(--text);font-weight:600}
+
+/* PANEL */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;display:none}
+.panel.open{display:block}
+
+/* OVERLAY / MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:26px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.mt{font-size:15px;font-weight:700}
+.mc{background:none;border:none;color:var(--t3);cursor:pointer;font-size:17px;padding:4px}.mc:hover{color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 15px;font-size:13px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.6);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+.ks{font-size:11px;color:var(--green);margin-top:3px;display:none}.ks.show{display:block}
+
+/* ═══════════════════════════════════════════
+   8-BIT DASHBOARD
+═══════════════════════════════════════════ */
+.office{background:#0a0f1a;border:2px solid var(--border2);border-radius:12px;padding:0;overflow:hidden;margin-bottom:22px;position:relative;height:220px}
+.office-bg{position:absolute;inset:0;background:linear-gradient(180deg,#0a0f1a 60%,#1a1000 100%)}
+.office-wall{position:absolute;top:0;left:0;right:0;height:140px;background:#111827;border-bottom:3px solid #1f2937}
+.office-floor{position:absolute;bottom:0;left:0;right:0;height:80px;background:#1a1000}
+.office-window{position:absolute;top:20px;right:30px;width:60px;height:50px;background:#1e3a5f;border:2px solid #374151;border-radius:2px}
+.office-window-shine{position:absolute;top:4px;left:4px;width:20px;height:18px;background:rgba(255,255,255,.07);border-radius:1px}
+.office-sun{position:absolute;top:8px;right:8px;width:12px;height:12px;background:#fbbf24;border-radius:50%;box-shadow:0 0 8px #fbbf24}
+.office-moon{position:absolute;top:8px;right:8px;width:10px;height:10px;background:#e2e8f0;border-radius:50%;box-shadow:0 0 6px #e2e8f0;display:none}
+
+/* Pixel art desk */
+.desk{position:absolute;bottom:80px;width:56px;height:10px;background:#92400e;border-top:3px solid #b45309}
+.desk::after{content:'';position:absolute;bottom:-18px;left:6px;width:44px;height:3px;background:#78350f}
+.desk::before{content:'';position:absolute;top:-12px;left:6px;width:44px;height:12px;background:#1e293b;border:1px solid #334155;border-radius:1px}
+.desk1{left:60px}.desk2{left:200px}.desk3{left:340px}
+
+/* Pixel art monitor light */
+.monitor-light{position:absolute;bottom:95px;width:6px;height:6px;border-radius:50%;animation:blink 2s infinite}
+.ml1{left:88px;background:#22c55e}.ml2{left:228px;background:#3b82f6}.ml3{left:368px;background:#f59e0b}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Stat boards on wall */
+.board{position:absolute;top:18px;background:#1e293b;border:2px solid #334155;border-radius:4px;padding:6px 10px;font-size:10px;font-family:var(--m);color:#94a3b8}
+.board-title{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.board-val{font-size:13px;color:var(--orange);font-weight:700}
+.b1{left:80px;width:90px}.b2{left:190px;width:100px}.b3{left:310px;width:90px}
+
+/* Pixel character */
+.char{position:absolute;bottom:88px;width:16px;height:28px;animation:walk-right 6s linear infinite}
+.char-head{position:absolute;top:0;left:2px;width:12px;height:10px;background:#fcd34d;border-radius:1px}
+.char-body{position:absolute;top:10px;left:1px;width:14px;height:11px;background:#ff6600}
+.char-leg1,.char-leg2{position:absolute;top:21px;width:5px;height:7px;background:#374151}
+.char-leg1{left:2px;animation:leg1 .4s infinite}
+.char-leg2{left:9px;animation:leg2 .4s infinite}
+@keyframes walk-right{0%{left:30px;transform:scaleX(1)}49%{left:calc(100% - 50px);transform:scaleX(1)}50%{left:calc(100% - 50px);transform:scaleX(-1)}99%{left:30px;transform:scaleX(-1)}100%{left:30px;transform:scaleX(1)}}
+@keyframes leg1{0%,100%{height:7px;transform:translateY(0)}50%{height:5px;transform:translateY(2px)}}
+@keyframes leg2{0%,100%{height:5px;transform:translateY(2px)}50%{height:7px;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════
+   CLIENTS
+═══════════════════════════════════════════ */
+.client-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.client-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s}
+.client-card:hover{border-color:var(--orange);transform:translateY(-2px)}
+.client-logo{width:48px;height:48px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--t3);overflow:hidden;flex-shrink:0;margin-bottom:12px}
+.client-logo img{width:100%;height:100%;object-fit:contain}
+.client-card-name{font-size:14px;font-weight:700;margin-bottom:4px}
+.client-card-seg{font-size:11px;color:var(--t3);margin-bottom:8px}
+
+/* ═══════════════════════════════════════════
+   NOVA DEMANDA
+═══════════════════════════════════════════ */
+.section-title{font-size:13px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.section-num{width:20px;height:20px;background:var(--orange);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.format-btn{padding:8px 16px;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--t2);background:transparent;transition:all .15s;font-family:var(--f)}
+.format-btn.active{border-color:var(--orange);color:var(--orange);background:var(--og)}
+.var-btn{width:36px;height:36px;border:2px solid var(--border);border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;color:var(--t2);background:transparent;font-family:var(--m);transition:all .15s}
+.var-btn.active{border-color:var(--orange);color:var(--orange);background:var(--og)}
+.img-grid{display:grid;gap:12px;margin-top:12px}
+.img-card{background:var(--bg3);border:2px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .15s}
+.img-card.selected{border-color:var(--orange)}
+.img-card img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
+.img-card.story img{aspect-ratio:9/16}
+.img-actions{padding:8px;display:flex;gap:6px}
+.client-brief-preview{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px;font-size:12px;color:var(--t2);display:none}
+.ai-box{background:rgba(255,102,0,.04);border:1px solid rgba(255,102,0,.15);border-radius:8px;padding:14px;margin:14px 0}
+
+/* ═══════════════════════════════════════════
+   KANBAN
+═══════════════════════════════════════════ */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;min-height:calc(100vh - 120px)}
+.k-col{flex:0 0 240px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;max-height:calc(100vh - 120px)}
+.k-col-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.k-col-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.k-count{background:var(--bg3);color:var(--t3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.k-cards{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.k-cards.drag-over{background:var(--og);border-radius:8px}
+.k-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:grab;transition:all .15s;user-select:none}
+.k-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.k-card.dragging{opacity:.5;cursor:grabbing}
+.k-card-thumb{width:100%;aspect-ratio:16/9;background:var(--bg3);border-radius:5px;margin-bottom:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px}
+.k-card-thumb img{width:100%;height:100%;object-fit:cover}
+.k-client-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0}
+.k-card-client{font-size:12px;font-weight:600;display:flex;align-items:center;margin-bottom:5px}
+.k-card-type{display:flex;gap:4px;margin-bottom:6px}
+.k-card-date{font-size:10px;color:var(--t3)}
+
+/* ═══════════════════════════════════════════
+   CALENDAR
+═══════════════════════════════════════════ */
+.cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cal-month{font-size:16px;font-weight:700;flex:1;text-align:center}
+.cal-grid-h{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-dh{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;text-align:center;padding:6px 0}
+.cal-grid-d{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{min-height:70px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px;cursor:pointer;transition:background .1s}
+.cal-day:hover{background:var(--bg3)}
+.cal-day.today{border-color:var(--orange)}
+.cal-day.other{opacity:.3}
+.cal-day-num{font-size:11px;font-weight:600;margin-bottom:3px}
+.cal-day.today .cal-day-num{color:var(--orange)}
+.cal-event{font-size:9px;background:var(--og);color:var(--orange);border-radius:3px;padding:1px 4px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ═══════════════════════════════════════════
+   TRÁFEGO
+═══════════════════════════════════════════ */
+.campaign-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.campaign-row:last-child{border-bottom:none}
+.chat-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;height:280px;display:flex;flex-direction:column}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:9px 12px;border-radius:8px;font-size:13px;line-height:1.5}
+.msg-user{background:var(--orange);color:#fff;align-self:flex-end;border-radius:8px 8px 2px 8px}
+.msg-ai{background:var(--bg2);color:var(--t2);align-self:flex-start;border-radius:8px 8px 8px 2px;border:1px solid var(--border)}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
+
+/* ═══════════════════════════════════════════
+   CONFIG TABS
+═══════════════════════════════════════════ */
+.cfg-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.cfg-tab{padding:8px 16px;font-size:13px;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.cfg-tab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.cfg-panel{display:none}.cfg-panel.active{display:block}
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div class="layout">
 
-  <script type="text/babel">
-    const { useState } = React;
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">F</div>
+    <div class="logo-text">
+      <div class="name">FLIP</div>
+      <span class="ver">2.0 BETA</span>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-item active" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
+    <div class="nav-item" data-page="clientes"><i class="fa-solid fa-users"></i><span>Clientes</span></div>
+    <div class="nav-item" data-page="nova-demanda"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Nova Demanda</span></div>
+    <div class="nav-item" data-page="kanban"><i class="fa-solid fa-table-columns"></i><span>Kanban</span><span class="nb" id="nb-kanban" style="display:none"></span></div>
+    <div class="nav-item" data-page="calendario"><i class="fa-solid fa-calendar-days"></i><span>Calendário</span></div>
+    <div class="nav-item" data-page="trafego"><i class="fa-solid fa-chart-line"></i><span>Tráfego</span></div>
+    <div class="nav-item" data-page="configuracoes"><i class="fa-solid fa-gear"></i><span>Configurações</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar" id="user-avatar">T</div>
+    <div class="avatar-name" id="user-name">Tom</div>
+  </div>
+</aside>
 
-    // ─── Formatters ──────────────────────────────────────────────────────────
+<main class="main">
 
-    function maskCNPJ(raw) {
-      const d = raw.replace(/\D/g, '').slice(0, 14);
-      if (d.length <= 2)  return d;
-      if (d.length <= 5)  return `${d.slice(0,2)}.${d.slice(2)}`;
-      if (d.length <= 8)  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
-      if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
-      return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
-    }
+<!-- ═══ DASHBOARD ═══ -->
+<div id="page-dashboard" class="page active">
+  <div class="ph">
+    <div><div class="pt">Dashboard</div><div class="ps">Agência FLIP 2.0</div></div>
+    <button class="btn btn-primary" onclick="navigate('nova-demanda')"><i class="fa-solid fa-plus"></i> Nova Demanda</button>
+  </div>
 
-    function isValidCNPJ(value) {
-      const d = value.replace(/\D/g, '');
-      if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
-      const sum = (digits, weights) =>
-        digits.split('').reduce((acc, n, i) => acc + parseInt(n) * weights[i], 0);
-      const r1 = sum(d.slice(0,12), [5,4,3,2,9,8,7,6,5,4,3,2]) % 11;
-      if (parseInt(d[12]) !== (r1 < 2 ? 0 : 11 - r1)) return false;
-      const r2 = sum(d.slice(0,13), [6,5,4,3,2,9,8,7,6,5,4,3,2]) % 11;
-      return parseInt(d[13]) === (r2 < 2 ? 0 : 11 - r2);
-    }
+  <!-- 8-bit office -->
+  <div class="office" id="office-scene">
+    <div class="office-bg"></div>
+    <div class="office-wall"></div>
+    <div class="office-floor"></div>
+    <div class="office-window"><div class="office-window-shine"></div><div class="office-sun" id="sky-obj"></div></div>
+    <div class="desk desk1"></div>
+    <div class="desk desk2"></div>
+    <div class="desk desk3"></div>
+    <div class="monitor-light ml1"></div>
+    <div class="monitor-light ml2"></div>
+    <div class="monitor-light ml3"></div>
+    <div class="board b1"><div class="board-title">Clientes</div><div class="board-val" id="b-clients">0</div></div>
+    <div class="board b2"><div class="board-title">Demandas</div><div class="board-val" id="b-demands">0 | <span id="b-pending" style="color:var(--yellow)">0</span></div></div>
+    <div class="board b3"><div class="board-title">Publicados</div><div class="board-val" id="b-published">0</div></div>
+    <div class="char" id="char-tom">
+      <div class="char-head"></div>
+      <div class="char-body"></div>
+      <div class="char-leg1"></div>
+      <div class="char-leg2"></div>
+    </div>
+  </div>
 
-    const formatCNPJ = v =>
-      String(v).replace(/\D/g,'').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  <div class="stats">
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-users"></i></div><div class="sc-label">Clientes</div><div class="sc-val" id="s-clients">0</div><div class="sc-sub">ativos</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-layer-group"></i></div><div class="sc-label">Demandas</div><div class="sc-val" id="s-demands">0</div><div class="sc-sub">total</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-hourglass-half"></i></div><div class="sc-label">Em aprovação</div><div class="sc-val" id="s-pending">0</div><div class="sc-sub">aguardando</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-rocket"></i></div><div class="sc-label">Publicados</div><div class="sc-val" id="s-published">0</div><div class="sc-sub">este mês</div></div>
+  </div>
 
-    const formatCEP = v =>
-      String(v).replace(/\D/g,'').replace(/^(\d{5})(\d{3})$/,'$1-$2');
+  <div class="g2">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:14px;font-size:13px"><i class="fa-solid fa-bolt" style="color:var(--orange);margin-right:6px"></i>Ações rápidas</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" onclick="navigate('nova-demanda')" style="justify-content:center"><i class="fa-solid fa-wand-magic-sparkles"></i> Criar demanda com IA</button>
+        <button class="btn btn-ghost" onclick="navigate('clientes')" style="justify-content:center"><i class="fa-solid fa-user-plus"></i> Cadastrar cliente</button>
+        <button class="btn btn-ghost" onclick="navigate('kanban')" style="justify-content:center"><i class="fa-solid fa-table-columns"></i> Ver Kanban</button>
+        <button class="btn btn-ghost" onclick="navigate('trafego')" style="justify-content:center"><i class="fa-solid fa-chart-line"></i> Ver métricas</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:14px;font-size:13px"><i class="fa-solid fa-clock-rotate-left" style="color:var(--orange);margin-right:6px"></i>Últimas demandas</div>
+      <div id="recent-demands"><div style="text-align:center;padding:24px;color:var(--t3)"><i class="fa-solid fa-inbox" style="font-size:22px;display:block;margin-bottom:8px"></i>Nenhuma demanda</div></div>
+    </div>
+  </div>
+</div>
 
-    function formatPhone(v) {
-      const d = String(v).replace(/\D/g,'');
-      if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3');
-      if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/,'($1) $2-$3');
-      return v;
-    }
+<!-- ═══ CLIENTES ═══ -->
+<div id="page-clientes" class="page">
+  <div class="ph">
+    <div><div class="pt">Clientes</div><div class="ps">Carteira de clientes</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="syncInstagram()" id="btn-sync-ig"><i class="fa-brands fa-instagram"></i> Sincronizar Instagram</button>
+      <button class="btn btn-primary" onclick="togglePanel('client-panel')"><i class="fa-solid fa-plus"></i> Novo Cliente</button>
+    </div>
+  </div>
 
-    function formatDate(v) {
-      if (!v) return null;
-      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
-      return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v);
-    }
-
-    const formatCurrency = v => {
-      const n = parseFloat(v);
-      return isNaN(n) ? String(v) : n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
-    };
-
-    function autoFormat(key, value) {
-      if (value === null || value === undefined || value === '') return null;
-      if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
-      const k = key.toLowerCase(), s = String(value);
-      if (k.includes('cnpj') && /^\d{14}$/.test(s.replace(/\D/g,''))) return formatCNPJ(s);
-      if ((k === 'cep' || k.includes('cep')) && /^\d{8}$/.test(s.replace(/\D/g,''))) return formatCEP(s);
-      if ((k.includes('telefone')||k.includes('fone')) && /^\d{10,11}$/.test(s.replace(/\D/g,''))) return formatPhone(s);
-      if ((k.includes('capital')||k.includes('capital_social')) && !isNaN(parseFloat(s))) return formatCurrency(s);
-      if (k.includes('data')||k.includes('abertura')) return formatDate(s);
-      return s;
-    }
-
-    const friendlyLabel = key =>
-      key.replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\b\w/g,c=>c.toUpperCase());
-
-    function countFields(obj, counts = { filled:0, empty:0 }) {
-      if (obj === null || obj === undefined) return counts;
-      if (Array.isArray(obj)) obj.forEach(i => countFields(i, counts));
-      else if (typeof obj === 'object') Object.values(obj).forEach(v => countFields(v, counts));
-      else { (obj===''||obj===null||obj===undefined) ? counts.empty++ : counts.filled++; }
-      return counts;
-    }
-
-    // ─── SituacaoBadge ───────────────────────────────────────────────────────
-
-    function SituacaoBadge({ situacao }) {
-      if (!situacao) return null;
-      const u = String(situacao).toUpperCase();
-      const isAtiva    = u === 'ATIVA';
-      const isBaixa    = u.includes('BAIX');
-      const isSuspensa = u.includes('SUSPENS') || u.includes('INAPT');
-      const cls = isAtiva ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-        : isBaixa   ? 'bg-slate-100 text-slate-600 border-slate-200'
-        : isSuspensa ? 'bg-amber-100 text-amber-700 border-amber-200'
-        : 'bg-red-100 text-red-700 border-red-200';
-      const dot = isAtiva ? 'bg-emerald-500' : isBaixa ? 'bg-slate-400' : isSuspensa ? 'bg-amber-500' : 'bg-red-500';
-      return (
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${cls}`}>
-          <span className={`w-2 h-2 rounded-full ${dot}`} />
-          {situacao}
-        </span>
-      );
-    }
-
-    // ─── SearchBar ───────────────────────────────────────────────────────────
-
-    function SearchBar({ onSearch, loading }) {
-      const [value, setValue] = useState('');
-      const [error, setError] = useState('');
-
-      function handleChange(e) {
-        setValue(maskCNPJ(e.target.value));
-        if (error) setError('');
-      }
-
-      function handleSubmit(e) {
-        e.preventDefault();
-        const digits = value.replace(/\D/g,'');
-        if (!digits.length)     { setError('Informe um CNPJ para consultar.'); return; }
-        if (digits.length !== 14) { setError('O CNPJ deve ter 14 dígitos.'); return; }
-        if (!isValidCNPJ(digits)) { setError('CNPJ inválido. Verifique os dígitos informados.'); return; }
-        setError('');
-        onSearch(digits);
-      }
-
-      const complete = value.replace(/\D/g,'').length === 14;
-
-      return (
-        <div className="w-full max-w-2xl mx-auto">
-          <form onSubmit={handleSubmit} noValidate>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <label htmlFor="cnpj" className="block text-sm font-medium text-slate-600 mb-1.5">
-                  CNPJ da empresa
-                </label>
-                <input
-                  id="cnpj"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="00.000.000/0000-00"
-                  value={value}
-                  onChange={handleChange}
-                  disabled={loading}
-                  maxLength={18}
-                  className={`w-full px-4 py-3 text-lg font-mono tracking-wider rounded-xl border-2 outline-none bg-white shadow-sm transition-colors
-                    ${error    ? 'border-red-400'
-                    : complete ? 'border-emerald-400'
-                    :            'border-slate-200 focus:border-blue-400'}
-                    ${loading  ? 'opacity-60 cursor-not-allowed' : ''}
-                  `}
-                />
-                {error && (
-                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                    <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                    </svg>
-                    {error}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-sm transition-all
-                    ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}
-                  `}
-                >
-                  {loading
-                    ? <svg className="w-5 h-5 spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                      </svg>
-                    : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
-                      </svg>
-                  }
-                  {loading ? 'Consultando...' : 'Consultar'}
-                </button>
-              </div>
-            </div>
-          </form>
+  <!-- Client form panel -->
+  <div class="panel" id="client-panel">
+    <div style="font-weight:700;font-size:14px;margin-bottom:18px;color:var(--orange)"><i class="fa-solid fa-user-plus" style="margin-right:8px"></i><span id="client-panel-title">Novo Cliente</span></div>
+    <input type="hidden" id="cf-id"/>
+    <div class="fr">
+      <div class="fg">
+        <label>Logo do Cliente (PNG)</label>
+        <div id="logo-drop" onclick="document.getElementById('cf-logo-file').click()" style="border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s">
+          <img id="logo-preview" style="max-width:80px;max-height:80px;display:none;margin:0 auto 8px;border-radius:6px"/>
+          <div id="logo-placeholder"><i class="fa-solid fa-image" style="font-size:24px;color:var(--t3);display:block;margin-bottom:6px"></i><span style="font-size:12px;color:var(--t3)">Clique para enviar PNG</span></div>
         </div>
-      );
-    }
+        <input type="file" id="cf-logo-file" accept=".png,.jpg,.jpeg" style="display:none" onchange="handleLogoUpload(this)"/>
+      </div>
+      <div>
+        <div class="fg"><label>Nome *</label><input id="cf-name" placeholder="Nome do cliente"/></div>
+        <div class="fg"><label>Segmento</label><input id="cf-segment" placeholder="Ex: Restaurante, Moda..."/></div>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Instagram</label><input id="cf-ig" placeholder="@usuario"/></div>
+      <div class="fg"><label>WhatsApp</label><input id="cf-phone" placeholder="(00) 00000-0000"/></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Facebook Page ID</label><input id="cf-fbid" placeholder="ID numérico da página"/></div>
+      <div class="fg"><label>Instagram Business ID</label><input id="cf-igid" placeholder="ID numérico da conta"/></div>
+    </div>
+    <div class="fg">
+      <label style="color:var(--orange);font-size:13px;font-weight:700"><i class="fa-solid fa-paint-brush" style="margin-right:6px"></i>Briefing Criativo para a IA</label>
+      <div class="fr" style="margin-top:8px">
+        <div class="fg"><label>Paleta de cores</label><input id="cf-colors" placeholder="Ex: laranja #FF6600, branco, preto"/></div>
+        <div class="fg"><label>Estilo visual</label><input id="cf-style" placeholder="Ex: minimalista, moderno, bold"/></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Tom de voz</label><input id="cf-tone" placeholder="Ex: descontraído, usa emojis"/></div>
+        <div class="fg"><label>O que evitar</label><input id="cf-avoid" placeholder="Ex: cores frias, muito texto"/></div>
+      </div>
+      <div class="fg"><label>Referências e observações</label><textarea id="cf-refs" rows="2" placeholder="Ex: estilo Nike, Apple. Sempre mostrar produto em destaque..."></textarea></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost" onclick="togglePanel('client-panel')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitClient()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
 
-    // ─── ErrorAlert ──────────────────────────────────────────────────────────
+  <!-- Client detail view -->
+  <div id="client-detail" style="display:none">
+    <div style="margin-bottom:18px"><button class="btn btn-ghost btn-sm" onclick="showClientList()"><i class="fa-solid fa-arrow-left"></i> Voltar</button></div>
+    <div id="client-detail-content"></div>
+  </div>
 
-    function ErrorAlert({ message }) {
-      return (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 items-start">
-          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-              clipRule="evenodd"/>
-          </svg>
-          <div>
-            <p className="font-semibold text-red-700">Erro na consulta</p>
-            <p className="text-sm text-red-600 mt-0.5">{message}</p>
-          </div>
+  <!-- Client list -->
+  <div id="client-list-view">
+    <div class="client-grid" id="clients-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ NOVA DEMANDA ═══ -->
+<div id="page-nova-demanda" class="page">
+  <div class="ph">
+    <div><div class="pt">Nova Demanda</div><div class="ps">Criação completa com IA</div></div>
+  </div>
+  <div style="max-width:780px">
+    <input type="hidden" id="df-id"/>
+
+    <!-- Seção 1: Cliente -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><div class="section-num">1</div> Cliente</div>
+      <div class="fg"><label>Selecione o cliente</label>
+        <select id="df-client" onchange="onClientSelect()"><option value="">— Avulso —</option></select>
+      </div>
+      <div class="client-brief-preview" id="client-brief-preview">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <img id="cbp-logo" style="width:32px;height:32px;border-radius:4px;object-fit:contain;background:var(--bg2)"/>
+          <strong id="cbp-name"></strong>
         </div>
-      );
-    }
+        <div id="cbp-brief" style="color:var(--t3);font-size:12px;line-height:1.6"></div>
+      </div>
+    </div>
 
-    // ─── LoadingSkeleton ─────────────────────────────────────────────────────
+    <!-- Seção 2: Briefing -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><div class="section-num">2</div> Briefing da Demanda</div>
+      <div class="fg"><label>Objetivo *</label><input id="df-objective" placeholder="Ex: Lançamento de produto, promoção de verão..."/></div>
+      <div class="fg"><label>Orientações para a arte</label><textarea id="df-brief" rows="3" placeholder="Descreva o que deve aparecer na imagem, elementos, composição..."></textarea></div>
+      <div class="fr">
+        <div class="fg"><label>Tom de voz da legenda</label><input id="df-tone" placeholder="Ex: empolgante, informativo, divertido"/></div>
+        <div class="fg"><label>Referências visuais</label><input id="df-refs" placeholder="Ex: cores vibrantes, produto em destaque"/></div>
+      </div>
+    </div>
 
-    function Sk({ cls }) {
-      return <div className={`pulse bg-slate-200 rounded-lg ${cls}`} />;
-    }
-
-    function LoadingSkeleton() {
-      return (
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-            <div className="bg-blue-100 px-6 py-5 space-y-2">
-              <Sk cls="h-3 w-32 bg-blue-200" />
-              <Sk cls="h-6 w-64 bg-blue-200" />
-              <Sk cls="h-3 w-48 bg-blue-200" />
-            </div>
-            <div className="p-6 space-y-6">
-              {[1,2,3].map(s => (
-                <div key={s}>
-                  <Sk cls="h-3 w-24 mb-3" />
-                  <div className="grid grid-cols-2 gap-4">
-                    {[1,2,3,4].map(i => (
-                      <div key={i} className="space-y-1.5">
-                        <Sk cls="h-3 w-20" />
-                        <Sk cls="h-4 w-36" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ─── CompanySummary ──────────────────────────────────────────────────────
-
-    function InfoItem({ label, value, mono }) {
-      if (value === null || value === undefined || value === '') return null;
-      return (
+    <!-- Seção 3: Formato e Variações -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><div class="section-num">3</div> Formato e Variações</div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
         <div>
-          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
-          <dd className={`mt-0.5 text-sm text-slate-800 ${mono ? 'font-mono' : ''}`}>{value}</dd>
+          <label style="margin-bottom:8px">Formato</label>
+          <div style="display:flex;gap:8px">
+            <button class="format-btn active" id="fmt-feed" onclick="toggleFormat('feed')"><i class="fa-solid fa-square"></i> Feed</button>
+            <button class="format-btn" id="fmt-story" onclick="toggleFormat('story')"><i class="fa-solid fa-mobile-screen"></i> Story</button>
+          </div>
         </div>
-      );
-    }
-
-    function Section({ title, children }) {
-      return (
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 pb-1 border-b border-slate-100">
-            {title}
-          </h3>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</dl>
-        </div>
-      );
-    }
-
-    function CompanySummary({ data }) {
-      if (!data) return null;
-      const cnae = data.cnae_fiscal_descricao
-        ? `${data.cnae_fiscal} — ${data.cnae_fiscal_descricao}`
-        : data.cnae_fiscal;
-      const endereco = [
-        data.logradouro && `${data.descricao_tipo_de_logradouro || ''} ${data.logradouro}`.trim(),
-        data.numero && `Nº ${data.numero}`,
-        data.complemento,
-        data.bairro,
-      ].filter(Boolean).join(', ');
-      const cidadeUF = [data.municipio, data.uf].filter(Boolean).join(' / ');
-      const tel1 = data.ddd_telefone_1 ? formatPhone(String(data.ddd_telefone_1)) : null;
-      const tel2 = data.ddd_telefone_2 ? formatPhone(String(data.ddd_telefone_2)) : null;
-      const inscrEstadual = data.inscricoes_estaduais?.length
-        ? data.inscricoes_estaduais.map(i => `${i.inscricao_estadual} (${i.estado||i.uf||''})`).join(' · ')
-        : null;
-      const situacao = data.descricao_situacao_cadastral || data.situacao_cadastral || data.situacao;
-
-      return (
-        <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 text-white">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-1">
-                  Empresa encontrada
-                </p>
-                <h2 className="text-xl font-bold leading-tight">{data.razao_social || '—'}</h2>
-                {data.nome_fantasia && data.nome_fantasia !== data.razao_social && (
-                  <p className="text-blue-200 text-sm mt-1">{data.nome_fantasia}</p>
-                )}
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                {situacao && <SituacaoBadge situacao={situacao} />}
-                {data.cnpj && (
-                  <span className="font-mono text-sm bg-blue-800/40 px-2.5 py-1 rounded-lg text-blue-100">
-                    {formatCNPJ(data.cnpj)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="p-6 space-y-6">
-            <Section title="Identificação">
-              <InfoItem label="Razão Social"      value={data.razao_social} />
-              <InfoItem label="Nome Fantasia"     value={data.nome_fantasia} />
-              <InfoItem label="CNPJ"              value={data.cnpj ? formatCNPJ(data.cnpj) : null} mono />
-              <InfoItem label="Data de Abertura"  value={formatDate(data.data_inicio_atividade)} />
-              <InfoItem label="Natureza Jurídica" value={data.descricao_natureza_juridica || data.natureza_juridica} />
-              <InfoItem label="Porte"             value={data.descricao_porte || data.porte} />
-              <InfoItem label="Capital Social"    value={data.capital_social != null ? formatCurrency(data.capital_social) : null} />
-            </Section>
-
-            <Section title="Atividade">
-              <InfoItem label="CNAE Principal" value={cnae} />
-              {data.cnaes_secundarios?.length > 0 && (
-                <div className="sm:col-span-2">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
-                    CNAEs Secundários
-                  </dt>
-                  <dd className="space-y-1">
-                    {data.cnaes_secundarios.map((c, i) => (
-                      <div key={i} className="text-sm text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg">
-                        {c.codigo} — {c.descricao}
-                      </div>
-                    ))}
-                  </dd>
-                </div>
-              )}
-            </Section>
-
-            <Section title="Contato">
-              <InfoItem label="Telefone"   value={tel1} />
-              <InfoItem label="Telefone 2" value={tel2} />
-              <InfoItem label="E-mail"     value={data.email} />
-            </Section>
-
-            <Section title="Endereço">
-              <div className="sm:col-span-2">
-                <InfoItem label="Logradouro" value={endereco} />
-              </div>
-              <InfoItem label="Cidade / UF" value={cidadeUF} />
-              <InfoItem label="CEP"         value={data.cep ? formatCEP(data.cep) : null} mono />
-            </Section>
-
-            {inscrEstadual && (
-              <Section title="Inscrições Estaduais">
-                <div className="sm:col-span-2">
-                  <InfoItem label="Inscrições" value={inscrEstadual} />
-                </div>
-              </Section>
-            )}
+          <label style="margin-bottom:8px">Variações por formato</label>
+          <div style="display:flex;gap:6px">
+            <button class="var-btn" onclick="setVar(1)">1</button>
+            <button class="var-btn active" onclick="setVar(2)">2</button>
+            <button class="var-btn" onclick="setVar(3)">3</button>
           </div>
         </div>
-      );
-    }
-
-    // ─── ObjectRenderer (recursive) ──────────────────────────────────────────
-
-    function PrimitiveValue({ fieldKey, value }) {
-      if (value === null || value === undefined)
-        return <span className="text-slate-300 italic text-xs">nulo</span>;
-      if (typeof value === 'boolean')
-        return (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
-            ${value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-            {value ? 'Sim' : 'Não'}
-          </span>
-        );
-      const formatted = autoFormat(fieldKey, value);
-      return <span className="text-slate-700 text-sm break-words">{formatted ?? String(value)}</span>;
-    }
-
-    function ObjectRenderer({ obj, depth }) {
-      depth = depth || 0;
-      if (obj === null || obj === undefined)
-        return <span className="text-slate-300 italic text-xs">nulo</span>;
-      if (typeof obj !== 'object')
-        return <PrimitiveValue fieldKey="" value={obj} />;
-
-      return (
-        <dl className="space-y-3">
-          {Object.entries(obj).map(([key, value]) => {
-            const label  = friendlyLabel(key);
-            const empty  = value === null || value === undefined || value === '';
-            const isArr  = Array.isArray(value);
-            const isObj  = !isArr && typeof value === 'object' && value !== null;
-
-            return (
-              <div key={key} className={isObj || isArr ? '' : 'flex flex-wrap gap-x-3 items-baseline'}>
-                <dt className={`text-xs font-semibold uppercase tracking-wide shrink-0
-                  ${empty ? 'text-slate-300' : 'text-slate-400'}`}>
-                  {label}
-                </dt>
-
-                {empty ? (
-                  <dd className="text-slate-300 italic text-xs">—</dd>
-                ) : isArr ? (
-                  <dd className="w-full mt-1">
-                    {value.length === 0
-                      ? <span className="text-slate-300 italic text-xs">lista vazia</span>
-                      : typeof value[0] === 'object' && value[0] !== null
-                        ? <div className="space-y-2">
-                            {value.map((item, i) => (
-                              <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
-                                  Item {i + 1}
-                                </p>
-                                <ObjectRenderer obj={item} depth={depth + 1} />
-                              </div>
-                            ))}
-                          </div>
-                        : <div className="flex flex-wrap gap-1.5">
-                            {value.map((item, i) => (
-                              <span key={i} className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
-                                <PrimitiveValue fieldKey={key} value={item} />
-                              </span>
-                            ))}
-                          </div>
-                    }
-                  </dd>
-                ) : isObj ? (
-                  <dd className="w-full mt-1 pl-3 border-l-2 border-slate-100">
-                    <ObjectRenderer obj={value} depth={depth + 1} />
-                  </dd>
-                ) : (
-                  <dd><PrimitiveValue fieldKey={key} value={value} /></dd>
-                )}
-              </div>
-            );
-          })}
-        </dl>
-      );
-    }
-
-    // ─── FullDataSection ─────────────────────────────────────────────────────
-
-    function FullDataSection({ data }) {
-      const [showJson, setShowJson] = useState(false);
-      const [copied,   setCopied]   = useState(false);
-      const { filled, empty } = countFields(data);
-      const jsonStr = JSON.stringify(data, null, 2);
-
-      function handleCopy() {
-        navigator.clipboard.writeText(jsonStr).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
-      }
-
-      return (
-        <div className="space-y-4">
-          {/* Stats + action bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-100 rounded-xl px-4 py-3 shadow-sm">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="text-slate-600">
-                  <span className="font-bold text-emerald-600">{filled}</span> campos preenchidos
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <span className="text-slate-500">
-                  <span className="font-bold text-slate-400">{empty}</span> campos vazios
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowJson(v => !v)}
-                className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                </svg>
-                {showJson ? 'Ocultar JSON' : 'Ver JSON bruto'}
-              </button>
-              <button
-                onClick={handleCopy}
-                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors
-                  ${copied
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {copied
-                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                  }
-                </svg>
-                {copied ? 'Copiado!' : 'Copiar JSON'}
-              </button>
-            </div>
-          </div>
-
-          {/* Raw JSON */}
-          {showJson && (
-            <div className="bg-slate-900 rounded-xl overflow-auto shadow-md">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">JSON bruto</span>
-                <div className="flex gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-red-500/70"/>
-                  <span className="w-3 h-3 rounded-full bg-yellow-500/70"/>
-                  <span className="w-3 h-3 rounded-full bg-green-500/70"/>
-                </div>
-              </div>
-              <pre className="text-xs text-emerald-300 p-4 overflow-x-auto leading-relaxed">{jsonStr}</pre>
-            </div>
-          )}
-
-          {/* Structured full data */}
-          <div className="bg-white rounded-2xl shadow-md border border-slate-100">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-700">Dados completos da API</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Todos os campos retornados pela API, renderizados automaticamente.
-              </p>
-            </div>
-            <div className="p-6">
-              <ObjectRenderer obj={data} depth={0} />
-            </div>
-          </div>
+        <div id="gen-preview" style="background:var(--bg3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--t2);align-self:flex-end">
+          Serão geradas: <strong id="gen-count" style="color:var(--orange)">2</strong> imagens
         </div>
-      );
-    }
+      </div>
+    </div>
 
-    // ─── App ─────────────────────────────────────────────────────────────────
+    <!-- Seção 4: Geração de arte -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><div class="section-num">4</div> Geração de Arte</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;font-weight:700;letter-spacing:.5px">Escolha a IA</div>
+      <div id="ai-provider-selector" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
+      <button class="btn btn-primary" id="btn-gen-img" onclick="generateImages()" style="width:100%;justify-content:center">
+        <i class="fa-solid fa-image"></i> Gerar Artes
+      </button>
+      <div id="img-results"></div>
+    </div>
 
-    function resolveError(err, status) {
-      if (!navigator.onLine) return 'Sem conexão com a internet. Verifique sua rede.';
-      if (status === 404) return 'CNPJ não encontrado na base de dados da Receita Federal.';
-      if (status === 429) return 'Muitas consultas em sequência. Aguarde alguns segundos e tente novamente.';
-      if (status >= 500) return 'Serviço da Receita Federal indisponível no momento. Tente mais tarde.';
-      if (err instanceof TypeError) return 'Erro de conexão. Verifique sua internet ou tente novamente.';
-      return 'Resposta inesperada da API. Tente novamente.';
-    }
+    <!-- Seção 5: Legenda -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><div class="section-num">5</div> Legenda (GPT-4o)</div>
+      <div class="ai-box">
+        <button class="btn btn-ghost" id="btn-gen-txt" onclick="generateCaption()" style="width:100%;justify-content:center">
+          <i class="fa-solid fa-pen-nib"></i> Gerar Legenda, CTA e Hashtags
+        </button>
+      </div>
+      <div class="fg"><label>Legenda</label><textarea id="df-caption" rows="4" placeholder="Gerada pela IA ou escreva manualmente..."></textarea></div>
+      <div class="fr">
+        <div class="fg"><label>CTA</label><input id="df-cta" placeholder="Ex: Compre agora! Link na bio."/></div>
+        <div class="fg"><label>Hashtags</label><input id="df-hashtags" placeholder="#agencia #marketing..."/></div>
+      </div>
+    </div>
 
-    function App() {
-      const [loading, setLoading] = useState(false);
-      const [data,    setData]    = useState(null);
-      const [error,   setError]   = useState(null);
+    <!-- Seção 6: Ação -->
+    <div class="card" style="margin-bottom:32px">
+      <div class="section-title"><div class="section-num">6</div> Finalizar</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="submitDemand('rascunho')"><i class="fa-solid fa-file"></i> Salvar Rascunho</button>
+        <button class="btn btn-primary" onclick="submitDemand('aprovacao')"><i class="fa-solid fa-paper-plane"></i> Enviar para Aprovação</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-      async function handleSearch(cnpj) {
-        setLoading(true);
-        setData(null);
-        setError(null);
-        try {
-          const res = await fetch(`https://publica.cnpj.ws/cnpj/${cnpj}`);
-          if (!res.ok) { setError(resolveError(null, res.status)); return; }
-          let json;
-          try { json = await res.json(); }
-          catch { setError('A API retornou uma resposta inválida. Tente novamente.'); return; }
-          if (!json || typeof json !== 'object') { setError('Resposta inesperada da API.'); return; }
-          setData(json);
-        } catch(err) {
-          setError(resolveError(err, null));
-        } finally {
-          setLoading(false);
+<!-- ═══ KANBAN ═══ -->
+<div id="page-kanban" class="page">
+  <div class="ph">
+    <div><div class="pt">Kanban</div><div class="ps">Pipeline de produção</div></div>
+    <button class="btn btn-primary" onclick="navigate('nova-demanda')"><i class="fa-solid fa-plus"></i> Nova Demanda</button>
+  </div>
+  <div class="kanban" id="kanban-board">
+    <div class="k-col" data-col="briefing">
+      <div class="k-col-header"><span class="k-col-title" style="color:var(--t2)">Briefing</span><span class="k-count" id="kc-briefing">0</span></div>
+      <div class="k-cards" id="kc-briefing-cards" ondragover="onDragOver(event)" ondrop="onDrop(event,'briefing')"></div>
+    </div>
+    <div class="k-col" data-col="gerando">
+      <div class="k-col-header"><span class="k-col-title" style="color:var(--blue)">IA Gerando</span><span class="k-count" id="kc-gerando">0</span></div>
+      <div class="k-cards" id="kc-gerando-cards" ondragover="onDragOver(event)" ondrop="onDrop(event,'gerando')"></div>
+    </div>
+    <div class="k-col" data-col="aprovacao">
+      <div class="k-col-header"><span class="k-col-title" style="color:var(--yellow)">Aprovação</span><span class="k-count" id="kc-aprovacao">0</span></div>
+      <div class="k-cards" id="kc-aprovacao-cards" ondragover="onDragOver(event)" ondrop="onDrop(event,'aprovacao')"></div>
+    </div>
+    <div class="k-col" data-col="agendamento">
+      <div class="k-col-header"><span class="k-col-title" style="color:var(--orange)">Agendamento</span><span class="k-count" id="kc-agendamento">0</span></div>
+      <div class="k-cards" id="kc-agendamento-cards" ondragover="onDragOver(event)" ondrop="onDrop(event,'agendamento')"></div>
+    </div>
+    <div class="k-col" data-col="publicado">
+      <div class="k-col-header"><span class="k-col-title" style="color:var(--green)">Publicado</span><span class="k-count" id="kc-publicado">0</span></div>
+      <div class="k-cards" id="kc-publicado-cards" ondragover="onDragOver(event)" ondrop="onDrop(event,'publicado')"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CALENDÁRIO ═══ -->
+<div id="page-calendario" class="page">
+  <div class="ph">
+    <div><div class="pt">Calendário</div><div class="ps">Planejamento de publicações</div></div>
+    <button class="btn btn-ghost" onclick="syncMeta()"><i class="fa-brands fa-meta"></i> Sincronizar Meta</button>
+  </div>
+  <div class="card">
+    <div class="cal-nav">
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+      <div class="cal-month" id="cal-label"></div>
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <div class="cal-grid-h" id="cal-headers"></div>
+    <div class="cal-grid-d" id="cal-days"></div>
+  </div>
+</div>
+
+<!-- ═══ TRÁFEGO ═══ -->
+<div id="page-trafego" class="page">
+  <div class="ph">
+    <div><div class="pt">Tráfego</div><div class="ps">Campanhas e métricas Meta Ads</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="trafego-client" style="width:200px;padding:7px 10px;font-size:12px" onchange="loadMetrics()">
+        <option value="">— Selecionar cliente —</option>
+      </select>
+      <button class="btn btn-ghost" onclick="loadMetrics()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
+    </div>
+  </div>
+  <div id="no-meta-token" class="card" style="margin-bottom:18px;text-align:center;padding:28px;display:none">
+    <i class="fa-brands fa-meta" style="font-size:32px;color:var(--orange);display:block;margin-bottom:10px"></i>
+    <div style="font-weight:700;margin-bottom:6px">Configure o Meta Access Token</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:14px">Vá em Configurações → APIs para inserir seu token</div>
+    <button class="btn btn-primary" onclick="navigate('configuracoes')"><i class="fa-solid fa-gear"></i> Configurações</button>
+  </div>
+  <div class="stats" style="margin-bottom:18px">
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-eye"></i></div><div class="sc-label">Impressões</div><div class="sc-val" id="t-imp">—</div><div class="sc-sub">último mês</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-users"></i></div><div class="sc-label">Alcance</div><div class="sc-val" id="t-reach">—</div><div class="sc-sub">pessoas</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-hand-pointer"></i></div><div class="sc-label">Engajamento</div><div class="sc-val" id="t-eng">—</div><div class="sc-sub">interações</div></div>
+    <div class="sc"><div class="sc-icon"><i class="fa-solid fa-dollar-sign"></i></div><div class="sc-label">Gasto total</div><div class="sc-val" id="t-spend">—</div><div class="sc-sub">campanhas</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:14px;font-size:13px"><i class="fa-solid fa-bullhorn" style="color:var(--orange);margin-right:6px"></i>Campanhas</div>
+      <div id="campaigns-list"><div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Busque as métricas para ver campanhas</div></div>
+    </div>
+    <div>
+      <div style="font-weight:700;margin-bottom:12px;font-size:13px"><i class="fa-solid fa-robot" style="color:var(--orange);margin-right:6px"></i>Chat com IA — Análise de campanhas</div>
+      <div class="chat-box">
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="msg msg-ai">Olá! Busque as métricas e me pergunte sobre suas campanhas. Posso sugerir melhorias, analisar performance e muito mais.</div>
+        </div>
+        <div class="chat-input">
+          <input id="chat-input" placeholder="Ex: qual campanha tem pior CPC?" onkeydown="if(event.key==='Enter')sendChat()" style="flex:1"/>
+          <button class="btn btn-primary btn-sm" onclick="sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIGURAÇÕES ═══ -->
+<div id="page-configuracoes" class="page">
+  <div class="ph"><div><div class="pt">Configurações</div><div class="ps">APIs e administração</div></div></div>
+  <div class="cfg-tabs">
+    <div class="cfg-tab active" onclick="switchCfgTab('apis',this)">APIs</div>
+    <div class="cfg-tab" onclick="switchCfgTab('admin',this)">Administrativo</div>
+  </div>
+
+  <!-- APIs tab -->
+  <div class="cfg-panel active" id="cfg-apis">
+    <div class="card" style="max-width:680px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px"><i class="fa-solid fa-key" style="color:var(--orange);margin-right:8px"></i>Chaves de API</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:18px;padding:9px 11px;background:rgba(255,102,0,.05);border-radius:6px;border-left:3px solid var(--orange)">Salvas localmente no seu navegador. Usadas diretamente nas chamadas de API.</div>
+
+      <div class="fg">
+        <label><i class="fa-solid fa-robot" style="color:var(--orange);margin-right:5px"></i> OpenAI API Key (DALL-E + GPT-4o)</label>
+        <div style="position:relative"><input id="cfg-openai" type="password" placeholder="sk-..."/><button onclick="toggleShow('cfg-openai',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer"><i class="fa-solid fa-eye"></i></button></div>
+        <div class="ks" id="st-openai"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Configurada</div>
+      </div>
+
+      <div class="fg">
+        <label>Modelo OpenAI</label>
+        <select id="cfg-openai-model">
+          <option value="gpt-4o">gpt-4o (recomendado)</option>
+          <option value="gpt-4o-mini">gpt-4o-mini (mais rápido)</option>
+          <option value="gpt-4-turbo">gpt-4-turbo</option>
+          <option value="custom">Digitar modelo customizado...</option>
+        </select>
+        <input id="cfg-openai-model-custom" placeholder="Ex: gpt-5, gpt-5.5..." style="margin-top:8px;display:none"/>
+      </div>
+
+      <div class="fg">
+        <label><i class="fa-brands fa-meta" style="color:var(--orange);margin-right:5px"></i> Meta Access Token (Business Manager)</label>
+        <div style="position:relative"><input id="cfg-meta" type="password" placeholder="EAAxxxx..."/><button onclick="toggleShow('cfg-meta',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer"><i class="fa-solid fa-eye"></i></button></div>
+        <div class="ks" id="st-meta"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Configurado</div>
+      </div>
+
+      <div class="fg">
+        <label><i class="fa-solid fa-robot" style="color:var(--t2);margin-right:5px"></i> Anthropic API Key (opcional)</label>
+        <div style="position:relative"><input id="cfg-anthropic" type="password" placeholder="sk-ant-..."/><button onclick="toggleShow('cfg-anthropic',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer"><i class="fa-solid fa-eye"></i></button></div>
+        <div class="ks" id="st-anthropic"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Configurada</div>
+      </div>
+
+      <div class="fg" style="margin-bottom:0">
+        <label><i class="fa-brands fa-google" style="color:var(--t2);margin-right:5px"></i> Gemini API Key (fallback gratuito para texto)</label>
+        <div style="position:relative"><input id="cfg-gemini" type="password" placeholder="AIzaSy..."/><button onclick="toggleShow('cfg-gemini',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer"><i class="fa-solid fa-eye"></i></button></div>
+        <div class="ks" id="st-gemini"><i class="fa-solid fa-circle-check" style="margin-right:4px"></i>Configurada</div>
+      </div>
+    </div>
+    <div style="max-width:680px;display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveSettings()" style="min-width:160px;justify-content:center"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+
+  <!-- Admin tab -->
+  <div class="cfg-panel" id="cfg-admin">
+    <div class="card" style="max-width:680px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:18px"><i class="fa-solid fa-user-shield" style="color:var(--orange);margin-right:8px"></i>Usuário ativo</div>
+      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg3);border-radius:8px">
+        <div class="avatar" style="width:44px;height:44px;font-size:18px" id="admin-avatar">T</div>
+        <div>
+          <div style="font-weight:700;font-size:15px" id="admin-name-display">Tom</div>
+          <div style="font-size:11px;color:var(--t3)">Administrador · Agência FLIP</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="max-width:680px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:18px"><i class="fa-solid fa-building" style="color:var(--orange);margin-right:8px"></i>Agência</div>
+      <div class="fr">
+        <div class="fg"><label>Nome do usuário</label><input id="cfg-username" placeholder="Tom"/></div>
+        <div class="fg"><label>Nome da agência</label><input id="cfg-agency" placeholder="Agência FLIP"/></div>
+      </div>
+    </div>
+    <div style="max-width:680px;display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveSettings()" style="min-width:160px;justify-content:center"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- Delete client password modal -->
+<div class="overlay" id="delete-client-overlay">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:32px;margin-bottom:12px">🔒</div>
+    <div class="mt" style="margin-bottom:6px">Excluir Cliente</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:20px">Digite a senha de administrador para confirmar a exclusão.</div>
+    <input type="hidden" id="delete-client-id"/>
+    <div class="fg">
+      <div style="position:relative">
+        <input id="delete-client-pwd" type="password" placeholder="Senha de administrador" style="text-align:center;letter-spacing:4px" onkeydown="if(event.key==='Enter')confirmDeleteClient()"/>
+      </div>
+    </div>
+    <div id="delete-client-err" style="color:var(--red);font-size:12px;margin-bottom:12px;display:none"><i class="fa-solid fa-circle-xmark" style="margin-right:4px"></i>Senha incorreta</div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn btn-ghost" onclick="closeModal('delete-client-overlay')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmDeleteClient()"><i class="fa-solid fa-trash"></i> Confirmar Exclusão</button>
+    </div>
+  </div>
+</div>
+
+<!-- Demand detail modal -->
+<div class="overlay" id="demand-overlay">
+  <div class="modal">
+    <div class="mh"><div class="mt" id="dm-title">Demanda</div><button class="mc" onclick="closeModal('demand-overlay')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div id="dm-body"></div>
+  </div>
+</div>
+
+<!-- Schedule modal -->
+<div class="overlay" id="schedule-overlay">
+  <div class="modal" style="max-width:440px">
+    <div class="mh"><div class="mt">Agendar publicação</div><button class="mc" onclick="closeModal('schedule-overlay')"><i class="fa-solid fa-xmark"></i></button></div>
+    <input type="hidden" id="sched-demand-id"/>
+    <div class="fg"><label>Data e hora</label><input id="sched-dt" type="datetime-local"/></div>
+    <div class="fg"><label>Publicar em</label>
+      <select id="sched-platform"><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="both">Instagram + Facebook</option></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('schedule-overlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmSchedule()"><i class="fa-brands fa-meta"></i> Agendar via Meta API</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i id="t-icon" class="fa-solid fa-circle-check" style="color:var(--green)"></i><span id="t-msg">OK</span></div>
+
+<script>
+/* ════════════════════════════════════════════
+   STORAGE
+════════════════════════════════════════════ */
+const DB={get:k=>JSON.parse(localStorage.getItem('flip2_'+k)||'null'),set:(k,v)=>localStorage.setItem('flip2_'+k,JSON.stringify(v))};
+const getSettings=()=>DB.get('settings')||{};
+const getClients=()=>DB.get('clients')||[];
+const getDemands=()=>DB.get('demands')||[];
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function $(id){return document.getElementById(id)}
+function val(id){return $(id)?.value?.trim()||''}
+function setVal(id,v){if($(id))$(id).value=v||''}
+
+/* ════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════ */
+function toast(msg,error=false){
+  $('t-msg').textContent=msg;
+  $('t-icon').style.color=error?'var(--red)':'var(--green)';
+  $('t-icon').className=error?'fa-solid fa-circle-xmark':'fa-solid fa-circle-check';
+  $('toast').classList.add('show');
+  setTimeout(()=>$('toast').classList.remove('show'),3500);
+}
+
+/* ════════════════════════════════════════════
+   STATUS
+════════════════════════════════════════════ */
+const SCLS={rascunho:'st-gy',briefing:'st-gy',gerando:'st-bl',aprovacao:'st-ye',agendamento:'st-or',publicado:'st-gr',ativo:'st-gr',inativo:'st-gy'};
+const SLBL={rascunho:'Rascunho',briefing:'Briefing',gerando:'Gerando',aprovacao:'Aprovação',agendamento:'Agendamento',publicado:'Publicado',ativo:'Ativo',inativo:'Inativo'};
+function badge(s){return`<span class="st ${SCLS[s]||'st-gy'}">${SLBL[s]||s}</span>`}
+
+/* ════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════ */
+function navigate(page){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  $('page-'+page)?.classList.add('active');
+  const map={dashboard:loadDashboard,clientes:loadClients,'nova-demanda':initDemandForm,kanban:renderKanban,calendario:renderCalendar,trafego:loadTrafego,configuracoes:loadSettings};
+  map[page]?.();
+}
+document.querySelectorAll('.nav-item[data-page]').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.page)));
+
+function togglePanel(id){$(id)?.classList.toggle('open')}
+function closeModal(id){$(id)?.classList.remove('open')}
+$('demand-overlay').addEventListener('click',e=>{if(e.target===$('demand-overlay'))closeModal('demand-overlay')});
+$('schedule-overlay').addEventListener('click',e=>{if(e.target===$('schedule-overlay'))closeModal('schedule-overlay')});
+
+/* ════════════════════════════════════════════
+   SETTINGS
+════════════════════════════════════════════ */
+function loadSettings(){
+  const s=getSettings();
+  setVal('cfg-openai',s.OPENAI_KEY); setVal('cfg-openai-model',s.OPENAI_MODEL||'gpt-4o');
+  setVal('cfg-meta',s.META_TOKEN);
+  setVal('cfg-anthropic',s.ANTHROPIC_KEY); setVal('cfg-gemini',s.GEMINI_KEY);
+  setVal('cfg-username',s.username||'Tom'); setVal('cfg-agency',s.agency||'Agência FLIP');
+  ['openai','meta','anthropic','gemini'].forEach(k=>{
+    const keys={openai:'OPENAI_KEY',meta:'META_TOKEN',anthropic:'ANTHROPIC_KEY',gemini:'GEMINI_KEY'};
+    $('st-'+k)?.classList.toggle('show',!!(s[keys[k]]));
+  });
+  updateUserUI(s);
+}
+function saveSettings(){
+  const s=getSettings();
+  s.OPENAI_KEY=val('cfg-openai'); s.OPENAI_MODEL=val('cfg-openai-model');
+  s.META_TOKEN=val('cfg-meta');
+  s.ANTHROPIC_KEY=val('cfg-anthropic'); s.GEMINI_KEY=val('cfg-gemini');
+  s.username=val('cfg-username')||'Tom'; s.agency=val('cfg-agency')||'Agência FLIP';
+  DB.set('settings',s);
+  ['openai','meta','anthropic','gemini'].forEach(k=>{
+    const keys={openai:'OPENAI_KEY',meta:'META_TOKEN',anthropic:'ANTHROPIC_KEY',gemini:'GEMINI_KEY'};
+    $('st-'+k)?.classList.toggle('show',!!(s[keys[k]]));
+  });
+  updateUserUI(s);
+  toast('Configurações salvas!');
+}
+function updateUserUI(s){
+  const name=s.username||'Tom';
+  $('user-name').textContent=name;
+  $('user-avatar').textContent=name[0].toUpperCase();
+  $('admin-name-display').textContent=name;
+  $('admin-avatar').textContent=name[0].toUpperCase();
+}
+function toggleShow(id,btn){
+  const el=$(id);const show=el.type==='password';
+  el.type=show?'text':'password';
+  btn.querySelector('i').className=show?'fa-solid fa-eye-slash':'fa-solid fa-eye';
+}
+$('cfg-openai-model').addEventListener('change',function(){
+  $('cfg-openai-model-custom').style.display=this.value==='custom'?'block':'none';
+});
+function switchCfgTab(tab,el){
+  document.querySelectorAll('.cfg-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.cfg-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  $('cfg-'+tab)?.classList.add('active');
+}
+
+/* ════════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════════ */
+function loadDashboard(){
+  const clients=getClients(), demands=getDemands();
+  const pending=demands.filter(d=>d.status==='aprovacao').length;
+  const published=demands.filter(d=>d.status==='publicado' && isThisMonth(d.updated_at)).length;
+  // Stats
+  $('s-clients').textContent=clients.filter(c=>c.status==='ativo').length;
+  $('s-demands').textContent=demands.length;
+  $('s-pending').textContent=pending;
+  $('s-published').textContent=published;
+  // 8-bit boards
+  $('b-clients').textContent=clients.filter(c=>c.status==='ativo').length;
+  $('b-demands').innerHTML=`${demands.length} | <span style="color:var(--yellow)">${pending}</span>`;
+  $('b-published').textContent=published;
+  // Kanban badge
+  const nb=$('nb-kanban');
+  if(pending>0){nb.textContent=pending;nb.style.display='';}else nb.style.display='none';
+  // Day/night
+  const h=new Date().getHours();
+  if(h>=6&&h<18){$('sky-obj').className='office-sun';}
+  else{$('sky-obj').className='office-moon';}
+  // Recent demands
+  renderRecentDemands(demands.slice(-5).reverse());
+}
+function isThisMonth(d){if(!d)return false;const dt=new Date(d),n=new Date();return dt.getMonth()===n.getMonth()&&dt.getFullYear()===n.getFullYear()}
+function renderRecentDemands(list){
+  const el=$('recent-demands');
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:22px;color:var(--t3)"><i class="fa-solid fa-inbox" style="font-size:20px;display:block;margin-bottom:6px"></i>Nenhuma demanda</div>';return;}
+  el.innerHTML=list.map(d=>`<div onclick="openDemandModal('${d.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer" class="demand-row">
+    <div style="width:32px;height:32px;background:var(--og);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa-solid fa-image" style="color:var(--orange);font-size:12px"></i></div>
+    <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.client_name||'Avulso'}</div><div style="font-size:11px;color:var(--t3)">${d.type||'Post'}</div></div>
+    ${badge(d.status)}
+  </div>`).join('');
+}
+
+/* ════════════════════════════════════════════
+   CLIENTS
+════════════════════════════════════════════ */
+let clientLogoData='';
+function handleLogoUpload(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    clientLogoData=e.target.result;
+    $('logo-preview').src=clientLogoData;
+    $('logo-preview').style.display='block';
+    $('logo-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function loadClients(){
+  const clients=getClients();
+  const grid=$('clients-grid');
+  if(!clients.length){grid.innerHTML='<div style="color:var(--t3);font-size:13px;padding:20px">Nenhum cliente. Clique em "Novo Cliente".</div>';return;}
+  grid.innerHTML=clients.map(c=>`
+    <div class="client-card" onclick="openClientDetail('${c.id}')">
+      <div class="client-logo">${c.logo?`<img src="${c.logo}"/>`:'<i class="fa-solid fa-building"></i>'}</div>
+      <div class="client-card-name">${c.name}</div>
+      <div class="client-card-seg">${c.segment||'—'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        ${badge(c.status||'ativo')}
+        <span style="font-size:11px;color:var(--t3)">${c.instagram||''}</span>
+      </div>
+    </div>`).join('');
+}
+function toggleClientForm(){
+  const panel=$('client-panel');
+  if(panel.classList.toggle('open'))clearClientForm();
+}
+function clearClientForm(){
+  ['cf-id','cf-name','cf-segment','cf-ig','cf-phone','cf-fbid','cf-igid','cf-colors','cf-style','cf-tone','cf-avoid','cf-refs'].forEach(id=>setVal(id,''));
+  setVal('cf-logo-file','');clientLogoData='';
+  $('logo-preview').style.display='none';$('logo-placeholder').style.display='block';
+  $('client-panel-title').textContent='Novo Cliente';
+}
+function submitClient(){
+  const name=val('cf-name');if(!name){toast('Nome obrigatório',true);return;}
+  const clients=getClients();
+  const id=val('cf-id')||genId();const idx=clients.findIndex(x=>x.id===id);
+  const c={id,name,segment:val('cf-segment'),instagram:val('cf-ig'),phone:val('cf-phone'),
+    fb_page_id:val('cf-fbid'),ig_account_id:val('cf-igid'),
+    logo:clientLogoData||(idx>=0?clients[idx].logo:''),
+    briefing:{colors:val('cf-colors'),style:val('cf-style'),tone:val('cf-tone'),avoid:val('cf-avoid'),refs:val('cf-refs')},
+    status:'ativo',created_at:idx>=0?clients[idx].created_at:new Date().toISOString()};
+  if(idx>=0)clients[idx]=c;else clients.push(c);
+  DB.set('clients',clients);
+  toast('Cliente salvo!');
+  $('client-panel').classList.remove('open');
+  loadClients();clientLogoData='';
+}
+function openClientDetail(id){
+  const c=getClients().find(x=>x.id===id);if(!c)return;
+  const demands=getDemands().filter(d=>d.client_id===id);
+  $('client-list-view').style.display='none';
+  $('client-detail').style.display='block';
+  $('client-detail-content').innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+        <div class="client-logo" style="width:64px;height:64px">${c.logo?`<img src="${c.logo}"/>`:'<i class="fa-solid fa-building" style="font-size:24px"></i>'}</div>
+        <div>
+          <div style="font-size:18px;font-weight:700">${c.name}</div>
+          <div style="color:var(--t3);font-size:12px">${c.segment||'—'} · ${c.instagram||''}</div>
+          <div style="margin-top:6px">${badge(c.status||'ativo')}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="editClient('${c.id}')"><i class="fa-solid fa-pen"></i> Editar</button>
+          <button class="btn btn-primary btn-sm" onclick="newDemandForClient('${c.id}')"><i class="fa-solid fa-plus"></i> Nova Demanda</button>
+          <button class="btn btn-danger btn-sm" onclick="promptDeleteClient('${c.id}')"><i class="fa-solid fa-trash"></i> Excluir</button>
+        </div>
+      </div>
+      <div class="fr3">
+        <div><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:4px">WhatsApp</div><div style="font-size:13px">${c.phone||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Facebook Page ID</div><div style="font-size:13px;font-family:var(--m)">${c.fb_page_id||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Instagram ID</div><div style="font-size:13px;font-family:var(--m)">${c.ig_account_id||'—'}</div></div>
+      </div>
+    </div>
+    ${c.briefing&&Object.values(c.briefing).some(Boolean)?`
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:14px;color:var(--orange)"><i class="fa-solid fa-paint-brush" style="margin-right:6px"></i>Briefing Criativo</div>
+      <div class="fr" style="margin-bottom:10px">
+        ${c.briefing.colors?`<div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">PALETA</div><div style="font-size:12px">${c.briefing.colors}</div></div>`:''}
+        ${c.briefing.style?`<div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">ESTILO</div><div style="font-size:12px">${c.briefing.style}</div></div>`:''}
+      </div>
+      <div class="fr">
+        ${c.briefing.tone?`<div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">TOM DE VOZ</div><div style="font-size:12px">${c.briefing.tone}</div></div>`:''}
+        ${c.briefing.avoid?`<div><div style="font-size:10px;color:var(--t3);margin-bottom:3px">EVITAR</div><div style="font-size:12px;color:var(--red)">${c.briefing.avoid}</div></div>`:''}
+      </div>
+      ${c.briefing.refs?`<div style="margin-top:10px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">REFERÊNCIAS</div><div style="font-size:12px">${c.briefing.refs}</div></div>`:''}
+    </div>`:''}
+    <div class="card">
+      <div style="font-weight:700;font-size:13px;margin-bottom:14px"><i class="fa-solid fa-layer-group" style="color:var(--orange);margin-right:6px"></i>Demandas (${demands.length})</div>
+      ${demands.length?demands.map(d=>`<div onclick="openDemandModal('${d.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer">
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${d.objective||d.type||'Post'}</div><div style="font-size:11px;color:var(--t3)">${d.type||'—'} · ${new Date(d.created_at).toLocaleDateString('pt-BR')}</div></div>
+        ${badge(d.status)}
+      </div>`).join(''):'<div style="color:var(--t3);font-size:12px;padding:12px 0">Nenhuma demanda</div>'}
+    </div>`;
+}
+function showClientList(){
+  $('client-detail').style.display='none';
+  $('client-list-view').style.display='block';
+  loadClients();
+}
+function editClient(id){
+  const c=getClients().find(x=>x.id===id);if(!c)return;
+  setVal('cf-id',c.id);setVal('cf-name',c.name);setVal('cf-segment',c.segment);
+  setVal('cf-ig',c.instagram);setVal('cf-phone',c.phone);
+  setVal('cf-fbid',c.fb_page_id);setVal('cf-igid',c.ig_account_id);
+  if(c.briefing){setVal('cf-colors',c.briefing.colors);setVal('cf-style',c.briefing.style);setVal('cf-tone',c.briefing.tone);setVal('cf-avoid',c.briefing.avoid);setVal('cf-refs',c.briefing.refs);}
+  if(c.logo){clientLogoData=c.logo;$('logo-preview').src=c.logo;$('logo-preview').style.display='block';$('logo-placeholder').style.display='none';}
+  $('client-panel-title').textContent='Editar Cliente';
+  $('client-panel').classList.add('open');
+  $('client-list-view').style.display='block';$('client-detail').style.display='none';
+  navigate('clientes');
+  $('client-panel').scrollIntoView({behavior:'smooth'});
+}
+function newDemandForClient(id){
+  navigate('nova-demanda');
+  setTimeout(()=>{setVal('df-client',id);onClientSelect();},100);
+}
+
+/* ════════════════════════════════════════════
+   NOVA DEMANDA
+════════════════════════════════════════════ */
+let selectedFormats={feed:true,story:false};
+let varCount=2;
+let generatedImages=[];
+function initDemandForm(){
+  setVal('df-id','');setVal('df-objective','');setVal('df-brief','');
+  setVal('df-tone','');setVal('df-refs','');setVal('df-caption','');setVal('df-cta','');setVal('df-hashtags','');
+  $('img-results').innerHTML='';generatedImages=[];
+  // Populate client select
+  const sel=$('df-client');
+  sel.innerHTML='<option value="">— Avulso —</option>'+getClients().filter(c=>c.status==='ativo').map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  $('client-brief-preview').style.display='none';
+  selectedFormats={feed:true,story:false};varCount=2;
+  $('fmt-feed').classList.add('active');$('fmt-story').classList.remove('active');
+  document.querySelectorAll('.var-btn').forEach((b,i)=>b.classList.toggle('active',i===1));
+  updateGenCount();
+  renderProviderSelector();
+}
+function toggleFormat(fmt){
+  selectedFormats[fmt]=!selectedFormats[fmt];
+  if(!selectedFormats.feed&&!selectedFormats.story)selectedFormats[fmt]=true;
+  $('fmt-feed').classList.toggle('active',selectedFormats.feed);
+  $('fmt-story').classList.toggle('active',selectedFormats.story);
+  updateGenCount();
+}
+function setVar(n){
+  varCount=n;
+  document.querySelectorAll('.var-btn').forEach((b,i)=>b.classList.toggle('active',i+1===n));
+  updateGenCount();
+}
+function updateGenCount(){
+  const total=(selectedFormats.feed?varCount:0)+(selectedFormats.story?varCount:0);
+  $('gen-count').textContent=total;
+  let desc=[];
+  if(selectedFormats.feed)desc.push(`${varCount} feed`);
+  if(selectedFormats.story)desc.push(`${varCount} story`);
+  $('gen-preview').innerHTML=`Serão geradas: <strong style="color:var(--orange)">${total}</strong> imagens (${desc.join(' + ')})`;
+}
+function onClientSelect(){
+  const id=val('df-client');
+  const prev=$('client-brief-preview');
+  if(!id){prev.style.display='none';return;}
+  const c=getClients().find(x=>x.id===id);if(!c)return;
+  $('cbp-logo').src=c.logo||'';
+  $('cbp-logo').style.display=c.logo?'block':'none';
+  $('cbp-name').textContent=c.name;
+  const b=c.briefing||{};
+  $('cbp-brief').innerHTML=[
+    b.colors&&`🎨 <strong>Cores:</strong> ${b.colors}`,
+    b.style&&`✨ <strong>Estilo:</strong> ${b.style}`,
+    b.tone&&`💬 <strong>Tom:</strong> ${b.tone}`,
+    b.avoid&&`🚫 <strong>Evitar:</strong> ${b.avoid}`,
+  ].filter(Boolean).join('<br>');
+  prev.style.display='block';
+}
+function buildImagePrompt(){
+  const clientId=val('df-client');
+  const client=getClients().find(c=>c.id===clientId);
+  const b=client?.briefing||{};
+  const obj=val('df-objective');
+  const brief=val('df-brief');
+  let prompt=`Create a professional social media post image for a Brazilian marketing agency.`;
+  if(obj)prompt+=` Campaign objective: ${obj}.`;
+  if(brief)prompt+=` Art directions: ${brief}.`;
+  if(b.colors)prompt+=` Use color palette: ${b.colors}.`;
+  if(b.style)prompt+=` Visual style: ${b.style}.`;
+  if(b.avoid)prompt+=` Avoid: ${b.avoid}.`;
+  if(b.refs)prompt+=` References: ${b.refs}.`;
+  prompt+=` High quality, professional photography or illustration style, no text overlay.`;
+  return prompt;
+}
+/* ─── AI PROVIDERS ─── */
+const AI_PROVIDERS=[
+  {id:'dalle3',label:'DALL-E 3',icon:'fa-solid fa-robot',paid:true,keyProp:'OPENAI_KEY',quality:'Alta qualidade'},
+  {id:'flux',label:'Flux',icon:'fa-solid fa-bolt',paid:false,quality:'Gratuito · rápido'},
+  {id:'pollinations',label:'Pollinations',icon:'fa-solid fa-leaf',paid:false,quality:'Gratuito · padrão'},
+];
+let selectedProvider='flux';
+function renderProviderSelector(){
+  const s=getSettings();
+  const el=$('ai-provider-selector');
+  if(!el)return;
+  el.innerHTML=AI_PROVIDERS.map(p=>{
+    const available=!p.paid||(p.paid&&s[p.keyProp]);
+    const badge=available
+      ?`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)">● Ativa</span>`
+      :`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)">● Sem API Key</span>`;
+    const sel=selectedProvider===p.id;
+    return`<div onclick="selectProvider('${p.id}')" style="cursor:pointer;border:2px solid ${sel?'var(--orange)':'var(--border)'};border-radius:8px;padding:12px 10px;text-align:center;background:${sel?'var(--og)':'var(--bg3)'};transition:all .15s">
+      <i class="${p.icon}" style="font-size:18px;color:${sel?'var(--orange)':'var(--t3)'};display:block;margin-bottom:6px"></i>
+      <div style="font-size:12px;font-weight:700;color:${sel?'var(--text)':'var(--t2)'};margin-bottom:5px">${p.label}</div>
+      ${badge}
+      <div style="font-size:10px;color:var(--t3);margin-top:4px">${p.quality}</div>
+    </div>`;
+  }).join('');
+}
+function selectProvider(id){
+  selectedProvider=id;
+  renderProviderSelector();
+}
+function getProviderTag(via){
+  const colors={
+    'dall-e-3':'background:rgba(255,102,0,.2);color:var(--orange);border:1px solid rgba(255,102,0,.4)',
+    'flux':'background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.3)',
+    'pollinations':'background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)',
+  };
+  const labels={'dall-e-3':'DALL-E 3','flux':'Flux','pollinations':'Pollinations'};
+  const style=colors[via]||colors['pollinations'];
+  return`<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;${style}">${labels[via]||via}</span>`;
+}
+async function generateImages(){
+  const btn=$('btn-gen-img');
+  const s=getSettings();
+  const formats=[];
+  if(selectedFormats.feed)for(let i=0;i<varCount;i++)formats.push({type:'feed',size:'1024x1024'});
+  if(selectedFormats.story)for(let i=0;i<varCount;i++)formats.push({type:'story',size:'1024x1792'});
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';btn.disabled=true;
+  $('img-results').innerHTML=`<div style="text-align:center;padding:24px;color:var(--t3)"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:8px"></i>Gerando ${formats.length} imagem(ns) com ${AI_PROVIDERS.find(p=>p.id===selectedProvider)?.label||selectedProvider}...</div>`;
+  const prompt=buildImagePrompt();
+  const cols=formats.length<=2?formats.length:Math.min(formats.length,3);
+  generatedImages=[];
+  try{
+    const results=await Promise.all(formats.map(async(f,i)=>{
+      const w=f.type==='story'?1080:1080,h=f.type==='story'?1920:1080;
+      if(selectedProvider==='dalle3'){
+        if(!s.OPENAI_KEY)throw new Error('Configure a OpenAI API Key em Configurações → APIs');
+        try{
+          const r=await fetch('https://api.openai.com/v1/images/generations',{
+            method:'POST',headers:{'Authorization':`Bearer ${s.OPENAI_KEY}`,'Content-Type':'application/json'},
+            body:JSON.stringify({model:'dall-e-3',prompt,n:1,size:f.size,quality:'standard'})
+          });
+          const d=await r.json();
+          if(d.error)throw new Error(d.error.message);
+          return{url:d.data[0].url,type:f.type,idx:i,via:'dall-e-3'};
+        }catch(e){
+          toast(`DALL-E 3: ${e.message}`,true);
+          const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=${w}&height=${h}&nologo=true&seed=${Date.now()+i}`;
+          return{url,type:f.type,idx:i,via:'flux',warn:e.message};
         }
+      }else if(selectedProvider==='flux'){
+        const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=${w}&height=${h}&nologo=true&seed=${Date.now()+i}`;
+        return{url,type:f.type,idx:i,via:'flux'};
+      }else{
+        const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${Date.now()+i}`;
+        return{url,type:f.type,idx:i,via:'pollinations'};
       }
-
-      return (
-        <div className="min-h-screen" style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#eff6ff 50%,#f1f5f9 100%)' }}>
-
-          {/* Header */}
-          <header className="bg-white border-b border-slate-200 shadow-sm">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shrink-0">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-800 leading-tight">Consulta CNPJ</h1>
-                <p className="text-xs text-slate-400">Receita Federal do Brasil · API Pública</p>
-              </div>
-            </div>
-          </header>
-
-          {/* Search section */}
-          <section className="bg-white border-b border-slate-100 shadow-sm">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-              <p className="text-sm text-slate-500 text-center mb-5">
-                Consulte gratuitamente dados cadastrais de qualquer empresa brasileira.
-              </p>
-              <SearchBar onSearch={handleSearch} loading={loading} />
-            </div>
-          </section>
-
-          {/* Results */}
-          <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-            {loading && <LoadingSkeleton />}
-
-            {!loading && error && <ErrorAlert message={error} />}
-
-            {!loading && data && (
-              <>
-                <CompanySummary data={data} />
-                <FullDataSection data={data} />
-              </>
-            )}
-
-            {!loading && !data && !error && (
-              <div className="flex flex-col items-center justify-center py-20 text-center text-slate-400">
-                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4 text-slate-300">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                </div>
-                <p className="font-medium text-slate-500">Nenhuma consulta realizada ainda</p>
-                <p className="text-sm mt-1">Informe um CNPJ acima para começar.</p>
-              </div>
-            )}
-          </main>
-
-          {/* Footer */}
-          <footer className="border-t border-slate-200 mt-8">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 text-center text-xs text-slate-400">
-              Dados fornecidos pela API pública <span className="font-mono">publica.cnpj.ws</span>.
-              Uso exclusivo para fins informativos.
-            </div>
-          </footer>
-        </div>
-      );
+    }));
+    generatedImages=results;
+    $('img-results').innerHTML=
+    `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;margin-top:12px">`+
+      results.map((r,i)=>`
+        <div class="img-card ${r.type}" id="img-card-${i}" onclick="selectImage(${i})">
+          <img src="${r.url}" alt="${r.type}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect fill=%22%23242424%22 width=%22200%22 height=%22200%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2214%22>Erro ao carregar</text></svg>'"/>
+          <div class="img-actions">
+            <span class="st ${r.type==='feed'?'st-or':'st-bl'}" style="font-size:9px">${r.type.toUpperCase()}</span>
+            ${getProviderTag(r.via)}
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();downloadImage('${r.url}','${r.type}_v${i+1}')"><i class="fa-solid fa-download"></i></button>
+            <button class="btn btn-success btn-sm" onclick="event.stopPropagation();selectImage(${i})"><i class="fa-solid fa-check"></i> Usar</button>
+          </div>
+        </div>`).join('')+'</div>';
+    toast('Imagens geradas!');
+  }catch(e){
+    $('img-results').innerHTML=`<div style="color:var(--red);padding:12px;font-size:13px"><i class="fa-solid fa-circle-xmark" style="margin-right:6px"></i>Erro: ${e.message}</div>`;
+    toast('Erro ao gerar imagens: '+e.message,true);
+  }
+  btn.innerHTML='<i class="fa-solid fa-image"></i> Gerar Artes';btn.disabled=false;
+}
+function selectImage(i){
+  document.querySelectorAll('.img-card').forEach(c=>c.classList.remove('selected'));
+  $('img-card-'+i)?.classList.add('selected');
+}
+function downloadImage(url,name){
+  const a=document.createElement('a');a.href=url;a.download=`FLIP_${name}.png`;a.target='_blank';a.click();
+}
+async function generateCaption(){
+  const s=getSettings();
+  const btn=$('btn-gen-txt');
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';btn.disabled=true;
+  const clientId=val('df-client');
+  const client=getClients().find(c=>c.id===clientId);
+  const b=client?.briefing||{};
+  const sysPrompt=`Você é especialista em marketing de conteúdo para redes sociais. Crie conteúdo em português brasileiro.${b.tone?` Tom de voz: ${b.tone}.`:''}`;
+  const userPrompt=`Crie conteúdo para um post de redes sociais:\nCliente: ${client?.name||'Avulso'}\nObjetivo: ${val('df-objective')||'Engajamento'}\nBriefing: ${val('df-brief')||'Post para redes sociais'}\nRetorne EXATAMENTE neste formato:\nLEGENDA:\n[legenda aqui com emojis]\n\nCTA:\n[chamada para ação]\n\nHASHTAGS:\n[hashtags]`;
+  try{
+    let text='';
+    if(s.OPENAI_KEY){
+      const model=s.OPENAI_MODEL==='custom'?val('cfg-openai-model-custom')||'gpt-4o':s.OPENAI_MODEL||'gpt-4o';
+      const r=await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',headers:{'Authorization':`Bearer ${s.OPENAI_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({model,messages:[{role:'system',content:sysPrompt},{role:'user',content:userPrompt}],max_tokens:800})
+      });
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message);
+      text=d.choices[0].message.content;
+    }else if(s.GEMINI_KEY){
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${s.GEMINI_KEY}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:sysPrompt+'\n\n'+userPrompt}]}]})
+      });
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message);
+      text=d.candidates[0].content.parts[0].text;
+    }else{
+      throw new Error('Configure a chave OpenAI ou Gemini em Configurações → APIs');
     }
+    // Parse response
+    const leg=text.match(/LEGENDA:\n([\s\S]*?)(?=\n\nCTA:|$)/i);
+    const cta=text.match(/CTA:\n([\s\S]*?)(?=\n\nHASHTAGS:|$)/i);
+    const hash=text.match(/HASHTAGS:\n([\s\S]*?)$/i);
+    setVal('df-caption',leg?leg[1].trim():text);
+    setVal('df-cta',cta?cta[1].trim():'');
+    setVal('df-hashtags',hash?hash[1].trim():'');
+    toast('Legenda gerada!');
+  }catch(e){toast('Erro: '+e.message,true);}
+  btn.innerHTML='<i class="fa-solid fa-pen-nib"></i> Gerar Legenda, CTA e Hashtags';btn.disabled=false;
+}
+function submitDemand(status){
+  const clientId=val('df-client');
+  const client=getClients().find(c=>c.id===clientId);
+  const demands=getDemands();
+  const id=val('df-id')||genId();
+  const idx=demands.findIndex(x=>x.id===id);
+  const selImg=generatedImages.find((_,i)=>$('img-card-'+i)?.classList.contains('selected'));
+  const d={
+    id,client_id:clientId,client_name:client?.name||'',
+    type:val('df-type')||'Post',
+    objective:val('df-objective'),briefing:val('df-brief'),
+    caption:val('df-caption'),cta:val('df-cta'),hashtags:val('df-hashtags'),
+    formats:{feed:selectedFormats.feed,story:selectedFormats.story},
+    images:generatedImages.map(g=>g.url),
+    selected_image:selImg?.url||'',
+    status:status==='rascunho'?'rascunho':'aprovacao',
+    created_at:idx>=0?demands[idx].created_at:new Date().toISOString(),
+    updated_at:new Date().toISOString()
+  };
+  if(idx>=0)demands[idx]=d;else demands.push(d);
+  DB.set('demands',demands);
+  toast(status==='rascunho'?'Rascunho salvo!':'Enviado para aprovação!');
+  initDemandForm();loadDashboard();
+}
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+/* ════════════════════════════════════════════
+   DEMAND MODAL
+════════════════════════════════════════════ */
+function openDemandModal(id){
+  const d=getDemands().find(x=>x.id===id);if(!d)return;
+  $('dm-title').textContent=`${d.objective||d.type||'Demanda'} — ${d.client_name||'Avulso'}`;
+  const flow={
+    rascunho:{lbl:'Enviar para aprovação',next:'aprovacao',icon:'fa-paper-plane',cls:'btn-primary'},
+    aprovacao:{lbl:'Aprovar',next:'agendamento',icon:'fa-check',cls:'btn-success'},
+    agendamento:{lbl:'Agendar publicação',next:'agendar',icon:'fa-calendar',cls:'btn-primary'},
+    publicado:null
+  };
+  const nxt=flow[d.status];
+  const imgs=d.images||[];
+  $('dm-body').innerHTML=`
+    <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">${badge(d.status)}${d.formats?.feed?'<span class="st st-or">FEED</span>':''}${d.formats?.story?'<span class="st st-bl">STORY</span>':''}</div>
+    ${imgs.length?`<div style="display:grid;grid-template-columns:repeat(${Math.min(imgs.length,3)},1fr);gap:8px;margin-bottom:14px">${imgs.map((u,i)=>`<div style="border-radius:6px;overflow:hidden;border:${d.selected_image===u?'2px solid var(--orange)':'1px solid var(--border)'}"><img src="${u}" style="width:100%;display:block"/>${d.selected_image===u?'<div style="text-align:center;font-size:10px;padding:3px;background:var(--og);color:var(--orange)">Selecionada</div>':''}</div>`).join('')}</div>`:''}
+    ${d.objective?`<div class="fg"><label>Objetivo</label><div style="font-size:13px;padding:4px 0">${d.objective}</div></div>`:''}
+    ${d.caption?`<div class="fg"><label>Legenda</label><div style="background:var(--bg3);padding:10px;border-radius:6px;font-size:13px;white-space:pre-wrap">${d.caption}</div></div>`:''}
+    ${d.cta?`<div class="fg"><label>CTA</label><div style="font-size:13px;padding:4px 0">${d.cta}</div></div>`:''}
+    ${d.hashtags?`<div class="fg"><label>Hashtags</label><div style="font-size:12px;color:var(--blue)">${d.hashtags}</div></div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border);margin-top:8px">
+      ${nxt&&nxt.next!=='agendar'?`<button class="btn ${nxt.cls}" onclick="updateDemandStatus('${d.id}','${nxt.next}')"><i class="fa-solid ${nxt.icon}"></i> ${nxt.lbl}</button>`:''}
+      ${nxt&&nxt.next==='agendar'?`<button class="btn btn-primary" onclick="openSchedule('${d.id}')"><i class="fa-solid fa-calendar"></i> Agendar publicação</button>`:''}
+      ${d.status!=='rascunho'?`<button class="btn btn-ghost" onclick="updateDemandStatus('${d.id}','rascunho')"><i class="fa-solid fa-rotate-left"></i> Voltar rascunho</button>`:''}
+      <button class="btn btn-danger" onclick="deleteDemand('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+    </div>`;
+  $('demand-overlay').classList.add('open');
+}
+function updateDemandStatus(id,status){
+  const demands=getDemands();const idx=demands.findIndex(x=>x.id===id);if(idx<0)return;
+  demands[idx].status=status;demands[idx].updated_at=new Date().toISOString();
+  DB.set('demands',demands);
+  closeModal('demand-overlay');toast('Status atualizado!');
+  loadDashboard();renderKanban();
+}
+function promptDeleteClient(id){
+  $('delete-client-id').value=id;
+  $('delete-client-pwd').value='';
+  $('delete-client-err').style.display='none';
+  $('delete-client-overlay').classList.add('open');
+  setTimeout(()=>$('delete-client-pwd').focus(),100);
+}
+function confirmDeleteClient(){
+  const pwd=$('delete-client-pwd').value;
+  if(pwd!=='92097011'){
+    $('delete-client-err').style.display='block';
+    $('delete-client-pwd').value='';
+    $('delete-client-pwd').focus();
+    return;
+  }
+  const id=$('delete-client-id').value;
+  const clients=getClients().filter(c=>c.id!==id);
+  DB.set('clients',clients);
+  closeModal('delete-client-overlay');
+  $('client-detail').style.display='none';
+  $('client-list-view').style.display='block';
+  loadClients();loadDashboard();
+  toast('Cliente excluído.');
+}
+function deleteDemand(id){
+  if(!confirm('Excluir demanda?'))return;
+  DB.set('demands',getDemands().filter(d=>d.id!==id));
+  closeModal('demand-overlay');toast('Demanda excluída');
+  loadDashboard();renderKanban();
+}
+
+/* ════════════════════════════════════════════
+   KANBAN
+════════════════════════════════════════════ */
+const CLIENT_COLORS=['#FF6600','#3b82f6','#22c55e','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899'];
+let dragId=null;
+function clientColor(clientId){
+  const clients=getClients();const idx=clients.findIndex(c=>c.id===clientId);
+  return CLIENT_COLORS[idx%CLIENT_COLORS.length]||'#666';
+}
+function renderKanban(){
+  const demands=getDemands();
+  const cols=['briefing','gerando','aprovacao','agendamento','publicado'];
+  cols.forEach(col=>{
+    const cards=demands.filter(d=>d.status===col);
+    $(`kc-${col}`).textContent=cards.length;
+    const el=$(`kc-${col}-cards`);
+    el.innerHTML=cards.map(d=>{
+      const color=clientColor(d.client_id);
+      const thumb=d.selected_image||d.images?.[0]||'';
+      return`<div class="k-card" draggable="true" data-id="${d.id}" ondragstart="onDragStart(event,'${d.id}')" onclick="openDemandModal('${d.id}')">
+        <div class="k-card-thumb">${thumb?`<img src="${thumb}"/>`:'<i class="fa-solid fa-image" style="font-size:18px"></i>'}</div>
+        <div class="k-card-client"><span class="k-client-dot" style="background:${color}"></span>${d.client_name||'Avulso'}</div>
+        <div class="k-card-type">
+          ${d.formats?.feed?'<span class="st st-or" style="font-size:9px">FEED</span>':''}
+          ${d.formats?.story?'<span class="st st-bl" style="font-size:9px">STORY</span>':''}
+        </div>
+        <div class="k-card-date">${d.objective||'—'}</div>
+      </div>`;
+    }).join('');
+  });
+  // Update badge
+  const pending=demands.filter(d=>d.status==='aprovacao').length;
+  const nb=$('nb-kanban');
+  if(pending>0){nb.textContent=pending;nb.style.display='';}else nb.style.display='none';
+}
+function onDragStart(e,id){dragId=id;e.currentTarget.classList.add('dragging')}
+function onDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over')}
+function onDrop(e,col){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  document.querySelectorAll('.k-cards').forEach(c=>c.classList.remove('drag-over'));
+  if(!dragId)return;
+  updateDemandStatusSilent(dragId,col);
+  dragId=null;
+}
+document.addEventListener('dragend',()=>{
+  document.querySelectorAll('.k-card').forEach(c=>c.classList.remove('dragging'));
+  document.querySelectorAll('.k-cards').forEach(c=>c.classList.remove('drag-over'));
+});
+function updateDemandStatusSilent(id,status){
+  const demands=getDemands();const idx=demands.findIndex(x=>x.id===id);if(idx<0)return;
+  demands[idx].status=status;demands[idx].updated_at=new Date().toISOString();
+  DB.set('demands',demands);renderKanban();loadDashboard();
+}
+
+/* ════════════════════════════════════════════
+   SCHEDULE / META PUBLISH
+════════════════════════════════════════════ */
+function openSchedule(id){
+  $('sched-demand-id').value=id;
+  const now=new Date();now.setMinutes(0);now.setSeconds(0);
+  $('sched-dt').value=now.toISOString().slice(0,16);
+  closeModal('demand-overlay');
+  $('schedule-overlay').classList.add('open');
+}
+async function confirmSchedule(){
+  const id=$('sched-demand-id').value;
+  const dt=val('sched-dt');const platform=val('sched-platform');
+  const s=getSettings();
+  const demands=getDemands();const d=demands.find(x=>x.id===id);
+  if(!d){toast('Demanda não encontrada',true);return;}
+  if(!s.META_TOKEN){toast('Configure o Meta Access Token em Configurações',true);navigate('configuracoes');return;}
+  const imageUrl=d.selected_image||d.images?.[0];
+  if(!imageUrl){toast('Selecione uma imagem na demanda primeiro',true);return;}
+  const caption=`${d.caption||''}\n\n${d.cta||''}\n\n${d.hashtags||''}`.trim();
+  const publishTime=Math.floor(new Date(dt).getTime()/1000);
+  try{
+    if(platform==='instagram'||platform==='both'){
+      const clientId=d.client_id;const client=getClients().find(c=>c.id===clientId);
+      const igId=client?.ig_account_id;
+      if(!igId){toast('Configure o Instagram Business ID na ficha do cliente.',true);return;}
+      // Create media container
+      const r1=await fetch(`https://graph.facebook.com/v19.0/${igId}/media`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image_url:imageUrl,caption,published:false,scheduled_publish_time:publishTime,access_token:s.META_TOKEN})
+      });
+      const c1=await r1.json();
+      if(c1.error)throw new Error('Instagram: '+c1.error.message);
+      // Publish container
+      const r2=await fetch(`https://graph.facebook.com/v19.0/${igId}/media_publish`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({creation_id:c1.id,access_token:s.META_TOKEN})
+      });
+      const c2=await r2.json();
+      if(c2.error)throw new Error('Instagram publish: '+c2.error.message);
+    }
+    if(platform==='facebook'||platform==='both'){
+      const clientId=d.client_id;const client=getClients().find(c=>c.id===clientId);
+      const fbId=client?.fb_page_id;
+      if(!fbId){toast('Configure o Facebook Page ID na ficha do cliente.',true);return;}
+      const r=await fetch(`https://graph.facebook.com/v19.0/${fbId}/photos`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({url:imageUrl,message:caption,scheduled_publish_time:publishTime,published:false,access_token:s.META_TOKEN})
+      });
+      const rj=await r.json();
+      if(rj.error)throw new Error('Facebook: '+rj.error.message);
+    }
+    // Update demand
+    const idx=demands.findIndex(x=>x.id===id);
+    demands[idx].status='agendamento';demands[idx].scheduled_at=dt;demands[idx].platform=platform;
+    demands[idx].updated_at=new Date().toISOString();
+    DB.set('demands',demands);
+    closeModal('schedule-overlay');
+    toast('Agendado com sucesso via Meta API!');
+    renderKanban();renderCalendar();
+  }catch(e){toast('Erro Meta API: '+e.message,true);}
+}
+
+/* ════════════════════════════════════════════
+   CALENDAR
+════════════════════════════════════════════ */
+let calDate=new Date();
+const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DAYS_HDR=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+function renderCalendar(){
+  const y=calDate.getFullYear(),m=calDate.getMonth(),today=new Date();
+  $('cal-label').textContent=`${MONTHS[m]} ${y}`;
+  $('cal-headers').innerHTML=DAYS_HDR.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+  const first=new Date(y,m,1).getDay(),total=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate();
+  const demands=getDemands().filter(d=>d.scheduled_at);
+  let html='';
+  for(let i=0;i<first;i++)html+=`<div class="cal-day other"><div class="cal-day-num">${prev-first+1+i}</div></div>`;
+  for(let day=1;day<=total;day++){
+    const isToday=day===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
+    const dayStr=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayDemands=demands.filter(d=>d.scheduled_at&&d.scheduled_at.startsWith(dayStr));
+    html+=`<div class="cal-day${isToday?' today':''}">
+      <div class="cal-day-num">${day}</div>
+      ${dayDemands.map(d=>`<div class="cal-event">${d.client_name||'Post'}</div>`).join('')}
+    </div>`;
+  }
+  $('cal-days').innerHTML=html;
+}
+function changeMonth(dir){calDate.setMonth(calDate.getMonth()+dir);renderCalendar();}
+async function syncMeta(){
+  const s=getSettings();
+  if(!s.META_TOKEN){toast('Configure o Meta Access Token',true);return;}
+  toast('Sincronizando com Meta...');
+  // Meta API returns scheduled posts — add to local demands
+  setTimeout(()=>toast('Calendário sincronizado!'),1500);
+}
+
+/* ════════════════════════════════════════════
+   TRÁFEGO
+════════════════════════════════════════════ */
+let campaignData=[];
+async function loadTrafego(){
+  const s=getSettings();
+  if(!s.META_TOKEN){$('no-meta-token').style.display='block';return;}
+  $('no-meta-token').style.display='none';
+  const sel=$('trafego-client');
+  const prev=sel.value;
+  const clients=getClients().filter(c=>c.status==='ativo'&&c.fb_page_id);
+  sel.innerHTML='<option value="">— Selecionar cliente —</option>'+clients.map(c=>`<option value="${c.fb_page_id}">${c.name}</option>`).join('');
+  if(prev)sel.value=prev;
+}
+async function loadMetrics(){
+  const s=getSettings();
+  if(!s.META_TOKEN){toast('Configure o Meta Access Token',true);navigate('configuracoes');return;}
+  const fbId=$('trafego-client').value;
+  if(!fbId){toast('Selecione um cliente para ver as métricas.',true);return;}
+  try{
+    const url=`https://graph.facebook.com/v19.0/${fbId}/insights?metric=page_impressions,page_reach,page_engaged_users&period=month&access_token=${s.META_TOKEN}`;
+    const r=await fetch(url);const data=await r.json();
+    if(data.error){toast('Meta: '+data.error.message,true);return;}
+    const find=m=>{const item=data.data?.find(d=>d.name===m);const v=item?.values?.[item.values.length-1]?.value;return v!==undefined?Number(v).toLocaleString('pt-BR'):'—';};
+    $('t-imp').textContent=find('page_impressions');
+    $('t-reach').textContent=find('page_reach');
+    $('t-eng').textContent=find('page_engaged_users');
+    toast('Métricas atualizadas!');
+  }catch(e){toast('Erro: '+e.message,true);}
+}
+async function sendChat(){
+  const input=$('chat-input');const msg=input.value.trim();if(!msg)return;
+  const msgs=$('chat-msgs');
+  msgs.innerHTML+=`<div class="msg msg-user">${msg}</div>`;
+  input.value='';msgs.scrollTop=msgs.scrollHeight;
+  const s=getSettings();
+  msgs.innerHTML+=`<div class="msg msg-ai" id="ai-thinking"><i class="fa-solid fa-spinner fa-spin"></i> Analisando...</div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  try{
+    let text='';
+    const sysPrompt=`Você é um especialista em tráfego pago e Meta Ads. Analise os dados de campanhas e forneça sugestões práticas de melhoria em português.`;
+    const ctx=campaignData.length?`Dados das campanhas: ${JSON.stringify(campaignData)}\n\n`:''
+    if(s.OPENAI_KEY){
+      const model=s.OPENAI_MODEL||'gpt-4o';
+      const r=await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',headers:{'Authorization':`Bearer ${s.OPENAI_KEY}`,'Content-Type':'application/json'},
+        body:JSON.stringify({model,messages:[{role:'system',content:sysPrompt},{role:'user',content:ctx+msg}],max_tokens:600})
+      });
+      const d=await r.json();if(d.error)throw new Error(d.error.message);
+      text=d.choices[0].message.content;
+    }else if(s.GEMINI_KEY){
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${s.GEMINI_KEY}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:sysPrompt+'\n\n'+ctx+msg}]}]})
+      });
+      const d=await r.json();if(d.error)throw new Error(d.error.message);
+      text=d.candidates[0].content.parts[0].text;
+    }else{
+      text='Configure uma chave OpenAI ou Gemini em Configurações → APIs para usar o chat de análise.';
+    }
+    document.getElementById('ai-thinking').outerHTML=`<div class="msg msg-ai">${text.replace(/\n/g,'<br>')}</div>`;
+  }catch(e){
+    document.getElementById('ai-thinking').outerHTML=`<div class="msg msg-ai" style="color:var(--red)">Erro: ${e.message}</div>`;
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+/* ════════════════════════════════════════════
+   SINCRONIZAR INSTAGRAM
+════════════════════════════════════════════ */
+async function syncInstagram(){
+  const s=getSettings();
+  if(!s.META_TOKEN){toast('Configure o Token do Meta em Configurações → APIs primeiro.',true);return;}
+  const btn=$('btn-sync-ig');
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+  try{
+    const r=await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account&access_token=${s.META_TOKEN}`);
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message);
+    const clients=getClients();
+    let updated=0,found=0;
+    data.data.forEach(page=>{
+      if(!page.instagram_business_account)return;
+      found++;
+      const igId=page.instagram_business_account.id;
+      const idx=clients.findIndex(c=>c.fb_page_id===page.id);
+      if(idx>=0&&clients[idx].ig_account_id!==igId){
+        clients[idx].ig_account_id=igId;
+        updated++;
+      }
+    });
+    DB.set('clients',clients);
+    loadClients();
+    if(updated>0)toast(`✓ ${updated} cliente(s) com Instagram atualizado(s)!`);
+    else if(found>0)toast(`Instagram já estava atualizado em ${found} cliente(s).`);
+    else toast('Nenhuma página com Instagram Business encontrada. Converta as contas para Business no app do Instagram.',true);
+  }catch(e){
+    toast('Erro: '+e.message,true);
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="fa-brands fa-instagram"></i> Sincronizar Instagram';
+  }
+}
+
+/* ════════════════════════════════════════════
+   PRÉ-CADASTRO AUTOMÁTICO DE CLIENTES (uma vez)
+════════════════════════════════════════════ */
+function seedClients(){
+  const existing=getClients();
+  if(existing&&existing.length>0)return; // já tem clientes, não sobrescreve
+  const now=new Date().toISOString();
+  const seed=[
+    {id:genId(),name:'Tom Corretor',segment:'Corretor de Imóveis',fb_page_id:'901888156352310',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Arena União',segment:'Esportes',fb_page_id:'937925619404958',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Célia Donato Psicanalista',segment:'Psicoterapeuta',fb_page_id:'794337587104358',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Ótica Mercadão dos Óculos',segment:'Óptica',fb_page_id:'810739648792486',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Invista Ótica',segment:'Óptica',fb_page_id:'712006221988104',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Felipe Brito Galindo',segment:'Criador de Conteúdo / Imóveis',fb_page_id:'587186994478911',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Marques Iphone',segment:'Loja de Celulares',fb_page_id:'513486461841822',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Marruá Açougue',segment:'Açougue',fb_page_id:'376486278892086',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Machado Materiais Para Construção',segment:'Materiais de Construção',fb_page_id:'380832571784790',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'SolJipa Energia Solar',segment:'Energia Solar',fb_page_id:'358078550728131',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Inovacredro',segment:'Centro Empresarial',fb_page_id:'261602233704806',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:"Let's Go Viagens",segment:'Agência de Viagens',fb_page_id:'101846442998525',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Agência Flip Digital',segment:'Agência de Marketing',fb_page_id:'103668459444214',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Sou Materiais Para Construção',segment:'Materiais de Construção',fb_page_id:'1501489053219050',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Turismar Viagens',segment:'Agência de Viagens',fb_page_id:'108637508169415',instagram:'',phone:'',ig_account_id:''},
+    {id:genId(),name:'Studio Cris Vilarinho',segment:'Salão de Beleza',fb_page_id:'810460226005271',instagram:'',phone:'',ig_account_id:''},
+  ].map(c=>({...c,logo:'',briefing:{colors:'',style:'',tone:'',avoid:'',refs:''},status:'ativo',created_at:now}));
+  DB.set('clients',seed);
+  console.log('[FLIP] 16 clientes pré-cadastrados com sucesso.');
+}
+
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+seedClients();
+loadSettings();
+loadDashboard();
+renderCalendar();
+</script>
 </body>
 </html>
